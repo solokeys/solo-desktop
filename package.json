@@ -1,0 +1,29 @@
+{
+  "name": "solo-desktop",
+  "version": "1.0.0",
+  "description": "Desktop app for updating and configuring Solo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/conorpp/solo-desktop.git"
+  },
+  "keywords": [
+    "Solo",
+    "FIDO2",
+    "security",
+    "U2F"
+  ],
+  "author": "Conor Patrick",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/conorpp/solo-desktop/issues"
+  },
+  "homepage": "https://github.com/conorpp/solo-desktop#readme",
+  "devDependencies": {
+    "electron": "^6.0.12"
+  }
+}
