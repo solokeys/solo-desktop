@@ -3,6 +3,7 @@ var HID = require('node-hid');
 const usb = require('usb');
 const os = require('os');
 const Util = require('../util');
+const CONST = require('../constants').HID;
 var devices = HID.devices();
 
 /** toWindowsPkt
@@ -15,6 +16,16 @@ function toWindowsPkt(pkt){
     win.set(pkt, 1);
     win[0] = 0;
     return win;
+}
+
+/** merge
+ * Combine two buffers.
+*/
+function merge(buf1,buf2){
+    var buf3 = new Uint8Array(buf1.length + buf2.length);
+    buf3.set(buf1,0);
+    buf3.set(buf2,buf1.length);
+    return buf3;
 }
 
 /** HidRequest
@@ -83,16 +94,62 @@ class HidRequest {
 
 /** HidResponse
  *  For parsing HidLayer responses.
+ * @param {Uint8Array} initPacket First packet returned by HID device.
 */
 class HidResponse {
-    constructor(buf) {
-        this.buffer = buf;
+    constructor(initPacket) {
+        this.init = initPacket;
+        this.cid = (initPacket[0] << 24) |
+                   (initPacket[1] << 16) |
+                   (initPacket[2] << 8)  |
+                   (initPacket[3] << 0);
+        this.cmd = initPacket[4];
+        this.payloadLen = (initPacket[5]<<8) | (initPacket[6])
+        this.payload = initPacket.slice(7,7+this.payloadLen);
+        this.seq = -1;
+    }
+
+    /** addPacket
+     * @param {Uint8Array} pkt HID seq packet to add
+    */
+    addPacket(pkt) {
+        if (this.leftover() == 0){
+            throw 'Already have expected payload.';
+        }
+        var cid =  (pkt[0] << 24) |
+                   (pkt[1] << 16) |
+                   (pkt[2] << 8)  |
+                   (pkt[3] << 0);
+        if (cid != this.cid){
+            throw 'Unexpected CID: ' + cid.toString(16);
+        }
+        var seq = pkt[4];
+        if (seq != (this.seq + 1)) {
+            throw 'Sequence received out of order: ' + seq.toString(10);
+        }
+        this.seq++;
+
+        var len = this.leftover() > 64 ? 64 : this.leftover();
+
+        this.payload = merge(this.payload, pkt.slice(5,5 + len));
+
+        if (this.leftover() < 0){
+            throw 'Received invalid number of bytes.';
+        }
+    }
+
+    /** leftover
+     *  Returns remaining bytes needed for payload
+    */
+    leftover () {
+        return this.payloadLen - this.payload.length;
     }
     
     get error() {
-        if (this.buffer[0]) {
-
+        if (this.cmd == CONST.ERROR){
+            return this.payload[0];
         }
+        return 0;
     }
 }
 
@@ -102,34 +159,36 @@ function getHIDDevicesByUsage(usagePage, usage){
     return devices.filter((d) => (d.usagePage == usagePage && d.usage == usage));
 }
 
-/** sendRecv
- * @desc Send a HID packet and return response.  Async/await compatible.
- * @param {Uint8Array} data
- * @return {Promise} Resolves to response data.  Rejects if error.
-*/
-HID.HID.prototype.sendRecv = function sendRecv(data) {
-    return new Promise((resolve, reject) => {
-        if( os.platform() == 'win32' ) {
-            this.write(Array.from(toWindowsPkt(data)));
-        } else {
-            this.write(Array.from(data));
-        }
-        this.read((err, data) => {
-            if (err) reject(err)
-            else {
-                resolve(data);
-            }
-        });
-    });
-}
+// /** sendRecv
+//  * @desc Send a HID packet and return response.  Async/await compatible.
+//  * @param {Uint8Array} data
+//  * @return {Promise} Resolves to response data.  Rejects if error.
+// */
+// HID.HID.prototype.sendRecv = function sendRecv(data) {
+//     return new Promise((resolve, reject) => {
+//         if( os.platform() == 'win32' ) {
+//             this.write(Array.from(toWindowsPkt(data)));
+//         } else {
+//             this.write(Array.from(data));
+//         }
+//         this.read((err, data) => {
+//             if (err) reject(err)
+//             else {
+//                 resolve(data);
+//             }
+//         });
+//     });
+// }
 
 /** sendAllRecv
  * @desc Send all HID packets and return complete response.  Async/await compatible.
- * @param {Array[Uint8Array]} pkts array of packets to send.
+ * @param {Integer} cmd byte command for CTAPHID
+ * @param {Uint8Array} payload binary payload to HID request
  * @return {Promise} Resolves to response data.  Rejects if error.
 */
-HID.HID.prototype.sendRecvAll = function sendRecv(pkts) {
+HID.HID.prototype.sendRecv = function sendRecv(cmd, payload) {
     return new Promise((resolve, reject) => {
+        var pkts = (new HidRequest(cmd, payload)).toPackets();
         for (var i = 0; i < pkts.length; i++){
             if( os.platform() == 'win32' ) {
                 this.write(Array.from(toWindowsPkt(pkts[i])));
@@ -137,17 +196,28 @@ HID.HID.prototype.sendRecvAll = function sendRecv(pkts) {
                 this.write(Array.from(pkts[i]));
             }
         }
-        console.log('sendallRecv wrote');
-        this.read((err, data) => {
-            if (err) {
-                console.log('Error', err);
-                reject(err)
+        try {
+
+
+            var init = this.readSync();
+            var res = new  HidResponse(init);
+            while(res.leftover() != 0) {
+                var pkt = this.readSync();
+                res.addPacket(pkt);
             }
-            else {
-                console.log('sendallRecv read');
-                resolve(data);
+
+            if (res.error == 0){
+                resolve(res.payload);
+            } else {
+                reject(res.error);
             }
-        });
+
+
+        } catch (e){
+            console.log('Error', e);
+            reject(e);
+        }
+
     });
 }
 
