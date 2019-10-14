@@ -18,16 +18,6 @@ function toWindowsPkt(pkt){
     return win;
 }
 
-/** merge
- * Combine two buffers.
-*/
-function merge(buf1,buf2){
-    var buf3 = new Uint8Array(buf1.length + buf2.length);
-    buf3.set(buf1,0);
-    buf3.set(buf2,buf1.length);
-    return buf3;
-}
-
 /** HidRequest
  *  Create packets to send to FIDO HID device.
 */
@@ -53,7 +43,7 @@ class HidRequest {
         pkt[6] = (this.data.length & 0x00ff) >> 0;
 
         // Send (64-7) bytes of payload.
-        for (var i = 7; i < pkt.length; i++)
+        for (var i = 7; i < 64; i++)
         {
             if (i - 7 >= this.data.length)
             {
@@ -77,13 +67,13 @@ class HidRequest {
         while (offset < this.data.length)
         {
             var pkt = init.slice(0);
-            pkt[5] = seq++;
+            pkt[4] = seq++;
             for (var i = 5; i < 64; i++){
-                if (offset + i >= this.data.length)
+                if ((offset + i -5) >= this.data.length)
                 {
                     break;
                 }
-                pkt[i] = this.data[offset + i];
+                pkt[i] = this.data[offset + i - 5];
             }
             offset += (64 - 5);
             arr.push(pkt);
@@ -103,7 +93,7 @@ class HidResponse {
                    (initPacket[1] << 16) |
                    (initPacket[2] << 8)  |
                    (initPacket[3] << 0);
-        this.cmd = initPacket[4];
+        this.cmd = initPacket[4] & 0x7f;
         this.payloadLen = (initPacket[5]<<8) | (initPacket[6])
         this.payload = initPacket.slice(7,7+this.payloadLen);
         this.seq = -1;
@@ -131,7 +121,7 @@ class HidResponse {
 
         var len = this.leftover() > 64 ? 64 : this.leftover();
 
-        this.payload = merge(this.payload, pkt.slice(5,5 + len));
+        this.payload = Util.merge(this.payload, pkt.slice(5,5 + len));
 
         if (this.leftover() < 0){
             throw 'Received invalid number of bytes.';
@@ -189,6 +179,7 @@ function getHIDDevicesByUsage(usagePage, usage){
 HID.HID.prototype.sendRecv = function sendRecv(cmd, payload) {
     return new Promise((resolve, reject) => {
         var pkts = (new HidRequest(cmd, payload)).toPackets();
+
         for (var i = 0; i < pkts.length; i++){
             if( os.platform() == 'win32' ) {
                 this.write(Array.from(toWindowsPkt(pkts[i])));
@@ -198,9 +189,15 @@ HID.HID.prototype.sendRecv = function sendRecv(cmd, payload) {
         }
         try {
 
-
             var init = this.readSync();
             var res = new  HidResponse(init);
+
+            // Ignore KEEPALIVE messages.
+            while (res.cmd == CONST.KEEPALIVE){
+                init = this.readSync();
+                res = new  HidResponse(init);
+            }
+
             while(res.leftover() != 0) {
                 var pkt = this.readSync();
                 res.addPacket(pkt);

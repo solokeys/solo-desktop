@@ -159,5 +159,13 @@ sha256bin: function(bin){
     return this.hex2bin(createHash('sha256').update(bin).digest('hex'));
 },
 
+merge: function(buf1,buf2){
+    var buf3 = new Uint8Array(buf1.length + buf2.length);
+    buf3.set(buf1,0);
+    buf3.set(buf2,buf1.length);
+    return buf3;
+}
+
+
 
 }

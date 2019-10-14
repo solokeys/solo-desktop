@@ -20,6 +20,11 @@ module.exports = {
 
     CTAP2: {
         GET_INFO: 0x04,
+        MAKE_CREDENTIAL: 0x01,
+        GET_ASSERTION: 0x02,
+        GET_NEXT_ASSERTION: 0x08,
+        CLIENT_PIN: 0x06,
+        RESET: 0x07,
     },
 
     CTAP1: {
