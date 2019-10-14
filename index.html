@@ -1,15 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html >
   <head>
     <meta charset="UTF-8">
     <title>Hello World!</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self';" />
+    <!-- <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline';" /> -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline';" />
   </head>
   <body>
     <h1>Hello World!</h1>
-    We are using node <script>document.write(process.versions.node)</script>,
+    We are using node <script >document.write(process.versions.node)</script>,
     Chrome <script>document.write(process.versions.chrome)</script>,
     and Electron <script>document.write(process.versions.electron)</script>.
+
+    <div>
+    <button onclick="listDevices()">List the devices</button>
+    </div>
+    <script>
+        console.log('test');
+        var Comm = require('./renderer/comm');
+        // const { ipcRenderer } = require('electron');
+        // ipcRenderer.send('msg', 'ping2');
+
+        // ipcRenderer.on('msg', (event,arg) => {
+
+        //     console.log('listened:', arg);
+        // });
+        async function listDevices(){
+            var res = await Comm.sendRecv('msg', 'ping');
+            console.log(res);
+        }
+    </script>
   </body>
 </html>
