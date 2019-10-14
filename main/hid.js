@@ -1,10 +1,9 @@
 const { ipcMain } = require('electron');
 var HID = require('node-hid');
 const usb = require('usb');
+const os = require('os');
 const Util = require('../util');
 var devices = HID.devices();
-
-var DEBUG = 1;
 
 /** toWindowsPkt
  *  @desc Windows has a bug where you need to prepend zero to packets.
@@ -82,6 +81,21 @@ class HidRequest {
     }
 }
 
+/** HidResponse
+ *  For parsing HidLayer responses.
+*/
+class HidResponse {
+    constructor(buf) {
+        this.buffer = buf;
+    }
+    
+    get error() {
+        if (this.buffer[0]) {
+
+        }
+    }
+}
+
 // Return list of HID devices matching usagePage and usage.
 function getHIDDevicesByUsage(usagePage, usage){
     var devices = HID.devices();
@@ -95,12 +109,42 @@ function getHIDDevicesByUsage(usagePage, usage){
 */
 HID.HID.prototype.sendRecv = function sendRecv(data) {
     return new Promise((resolve, reject) => {
-        if (DEBUG) console.log('<<', Util.obj2hex(data))
-        var r = this.write(Array.from(data));
+        if( os.platform() == 'win32' ) {
+            this.write(Array.from(toWindowsPkt(data)));
+        } else {
+            this.write(Array.from(data));
+        }
         this.read((err, data) => {
             if (err) reject(err)
             else {
-                if (DEBUG) console.log('>>', Util.obj2hex(data))
+                resolve(data);
+            }
+        });
+    });
+}
+
+/** sendAllRecv
+ * @desc Send all HID packets and return complete response.  Async/await compatible.
+ * @param {Array[Uint8Array]} pkts array of packets to send.
+ * @return {Promise} Resolves to response data.  Rejects if error.
+*/
+HID.HID.prototype.sendRecvAll = function sendRecv(pkts) {
+    return new Promise((resolve, reject) => {
+        for (var i = 0; i < pkts.length; i++){
+            if( os.platform() == 'win32' ) {
+                this.write(Array.from(toWindowsPkt(pkts[i])));
+            } else {
+                this.write(Array.from(pkts[i]));
+            }
+        }
+        console.log('sendallRecv wrote');
+        this.read((err, data) => {
+            if (err) {
+                console.log('Error', err);
+                reject(err)
+            }
+            else {
+                console.log('sendallRecv read');
                 resolve(data);
             }
         });
@@ -143,7 +187,8 @@ module.exports = {
     },
     open: function(device){
         return new HID.HID(device.path);
-    }
+    },
+    Request: HidRequest,
 };
 
 
