@@ -149,27 +149,6 @@ function getHIDDevicesByUsage(usagePage, usage){
     return devices.filter((d) => (d.usagePage == usagePage && d.usage == usage));
 }
 
-// /** sendRecv
-//  * @desc Send a HID packet and return response.  Async/await compatible.
-//  * @param {Uint8Array} data
-//  * @return {Promise} Resolves to response data.  Rejects if error.
-// */
-// HID.HID.prototype.sendRecv = function sendRecv(data) {
-//     return new Promise((resolve, reject) => {
-//         if( os.platform() == 'win32' ) {
-//             this.write(Array.from(toWindowsPkt(data)));
-//         } else {
-//             this.write(Array.from(data));
-//         }
-//         this.read((err, data) => {
-//             if (err) reject(err)
-//             else {
-//                 resolve(data);
-//             }
-//         });
-//     });
-// }
-
 /** sendAllRecv
  * @desc Send all HID packets and return complete response.  Async/await compatible.
  * @param {Integer} cmd byte command for CTAPHID
@@ -177,6 +156,7 @@ function getHIDDevicesByUsage(usagePage, usage){
  * @return {Promise} Resolves to response data.  Rejects if error.
 */
 HID.HID.prototype.sendRecv = function sendRecv(cmd, payload) {
+    payload = payload || [];
     return new Promise((resolve, reject) => {
         var pkts = (new HidRequest(cmd, payload)).toPackets();
 
@@ -227,20 +207,16 @@ if (require.main === module) {
         if (devs.length == 0) {
             throw 'No devices found'
         }
+        console.log('Dev: ', devs[0]);
 
         var dev = new HID.HID(devs[0].path);
+        console.log('Dev2: ', dev.getDeviceInfo());
         dev.on('error', function(error) {
             console.log('ERROR: ', error);
         } );
 
-        console.log("waiting for read");
-        var req = new HidRequest(0x61, [0,0,0,0]);
-        var pkt = toWindowsPkt(req.toInit());
-
-        console.log(Util.bin2hex(pkt), pkt.length);
-
-        var res = await dev.sendRecv(pkt);
-        console.log('Solo version is ', );
+        var res = await dev.sendRecv(0x61, [0,0,0,0]);
+        console.log('Solo version is ', res);
 
         process.exit()
     }
@@ -253,7 +229,20 @@ module.exports = {
         return getHIDDevicesByUsage(0xf1d0, 1);
     },
     open: function(device){
-        return new HID.HID(device.path);
+        var dev = new HID.HID(device.path);
+        dev.deviceInfo = device;
+        return dev;
+    },
+    reopen: function(device){
+        var devs = getHIDDevicesByUsage(0xf1d0, 1);
+        for (var i = 0; i < devs.length; i++)
+        {
+            if (devs[i].serialNumber == device.deviceInfo.serialNumber){
+                return this.open(devs[i]);
+            }
+        }
+        throw 'Could not find device ' + device.deviceInfo.serialNumber;
+
     },
     Request: HidRequest,
 };
