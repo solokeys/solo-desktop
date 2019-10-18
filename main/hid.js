@@ -1,4 +1,3 @@
-const { ipcMain } = require('electron');
 var HID = require('node-hid');
 const usb = require('usb');
 const os = require('os');
@@ -248,8 +247,3 @@ module.exports = {
 };
 
 
-
-// ipcMain.on('msg', (event, arg) => {
-//   console.log(arg) // prints "ping"
-//   event.reply('msg', 'pong')
-// });

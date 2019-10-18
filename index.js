@@ -1,3 +1,4 @@
+const { ipcMain } = require('electron');
 const { app, BrowserWindow } = require('electron')
 const path = require('path'); 
 require('./main/hid');
@@ -58,3 +59,15 @@ app.on('activate', () => {
   }
 })
 
+var demo = require('./demo');
+demo.init();
+
+async function eventFunc(cmd, arg, event){
+  demo.sendEvent(cmd, arg, (res)=>{
+    event.reply(cmd, res);
+  });
+}
+
+ipcMain.on('msg', (event, arg) => {eventFunc('msg', arg, event);});
+ipcMain.on('register', (event, arg) => {eventFunc('register', arg, event);});
+ipcMain.on('auth', (event, arg) => {eventFunc('auth', arg, event);});

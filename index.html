@@ -1,35 +1,170 @@
 <!DOCTYPE html>
-<html >
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <!-- <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline';" /> -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline';" />
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-    We are using node <script >document.write(process.versions.node)</script>,
-    Chrome <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
+<html>
 
-    <div>
-    <button onclick="listDevices()">List the devices</button>
+<head>
+  <meta charset="UTF-8">
+  <title>Hello World!</title>
+  <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+  <!-- <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline';" /> -->
+  <link rel='stylesheet' href='css/bootstrap.min.css' />
+  <link rel='stylesheet' href='css/bootstrap-grid.min.css' />
+  <link rel='stylesheet' href='css/bootstrap-reboot.min.css' />
+  <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline';" />
+</head>
+
+<body style="padding:20px;">
+
+  <script>
+
+    window.$ = window.jQuery = window.jquery = require('./js/jquery-3.4.1.min');
+    console.log("JQUERY");
+
+    // require('./css/bootstrap.min');
+  </script>
+  <style>
+    .loader {
+      margin-left: 49%;
+    }
+  </style>
+  <h1>SoloKeys Demo</h1>
+  <h2>Try for a chance to win a free Solo!
+  </h2>
+  <h3>If your 45th signature byte is between <span id="DOWN"></span> and <span id="UP"></span>, you win.
+  </h3>
+
+
+  <div>
+    <div style="height: 50%; margin-bottom: 50px;">
+
+      <button class="btn btn-primary" style="width:100%; height: 100px;" onclick="register()">Register</button>
+      <div class="text-success font-weight-bold h4" id="register-status">Register to start.</div>
+      <div class="text-danger font-weight-bold h4" id="register-error"></div>
+
+      <div class="spinner-border text-primary loader d-none" role="status" id="register-load">
+        <span class="sr-only">Loading...</span>
+      </div>
+
     </div>
-    <script>
-        console.log('test');
-        var Comm = require('./renderer/comm');
-        // const { ipcRenderer } = require('electron');
-        // ipcRenderer.send('msg', 'ping2');
+    <div style="height: 50%;">
+      <button class="btn btn-success" style="width:100%; height: 100px;" onclick="auth()">Auth</button>
+      <div class="text-success font-weight-bold h4" id="auth-status"></div>
+      <div class="text-danger font-weight-bold h4" id="auth-error"></div>
+      <div class=" h4" id="sig">
+        <span class="" id="sig1"> </span> <span class="font-weight-bold" id="sig2"></span> <span class="" id="sig3">
+        </span>
+      </div>
 
-        // ipcRenderer.on('msg', (event,arg) => {
+      <div class="spinner-border text-success loader d-none" role="status" id="auth-load">
+        <span class="sr-only ">Loading...</span>
+      </div>
 
-        //     console.log('listened:', arg);
-        // });
-        async function listDevices(){
-            var res = await Comm.sendRecv('msg', 'ping');
-            console.log(res);
-        }
-    </script>
-  </body>
+
+
+    </div>
+
+
+    <div style="height: 50%; margin-top:80px; margin-left:340px; float:right">
+      <button class="btn btn-light font-weight-bold" style="width:120px; height: 70px;" onclick="reset()">Start over</button>
+    </div>
+  </div>
+
+  <script>
+    console.log('test');
+    var Comm = require('./renderer/comm');
+    var Util = require('./util');
+
+    var DOWN = 240;
+    var UP = 256;
+    $('#UP').html('0x' + UP.toString(16));
+
+    $('#DOWN').html('0x' + DOWN.toString(16));
+    // const { ipcRenderer } = require('electron');
+    // ipcRenderer.send('msg', 'ping2');
+
+    // ipcRenderer.on('msg', (event,arg) => {
+
+    //     console.log('listened:', arg);
+    // });
+    async function listDevices() {
+      var res = await Comm.sendRecv('msg', 'ping');
+      console.log(res);
+    }
+    var REG = null;
+
+    async function register() {
+      $('#register-load').removeClass('d-none');
+      var res = await Comm.sendRecv('register', '');
+      $('#register-load').addClass('d-none');
+      REG = JSON.parse(res);
+      console.log('reg', res);
+
+      $('#register-status').html('Successfully registered ' + REG.name);
+
+
+    }
+
+    async function auth() {
+      if (!REG) {
+        console.log('Error no reg yet');
+        return;
+      }
+
+      $('#auth-load').removeClass('d-none');
+      var res = await Comm.sendRecv('auth', JSON.stringify(REG));
+      $('#auth-load').addClass('d-none');
+      $('#auth-status').html('Authenticated.');
+
+      res = JSON.parse(res);
+
+      var sig = res.signature;
+      var sig1 = sig.slice(45, 45 * 2);
+      var sig2 = sig.slice(45 * 2, 45 * 2 + 2);
+      var sig3 = sig.slice(45 * 2 + 2, 45 * 3 + 2);
+
+      var byte = res.lowByte.toString(16);
+      if (byte.length == 1)
+        byte = '0' + byte;
+      if (byte >= DOWN && byte <= UP) {
+        console.log('you win!');
+        $('#auth-status').html('Authenticated! And you win 😃! Your 45th byte was 0x' + byte + '.');
+        $('#sig2').addClass('text-success');
+      }
+      else {
+        $('#auth-error').html('Authenticated! But you did not win 😢. Your 45th byte was 0x' + byte + '.');
+        $('#sig2').addClass('text-danger');
+      }
+
+      console.log('sig1', sig1);
+      console.log('sig2', sig2);
+      console.log('sig3', sig3);
+      $('#sig1').html(sig1);
+      $('#sig2').html(sig2);
+      $('#sig3').html(sig3);
+
+      console.log('auth', res);
+    }
+
+    function reset() {
+      REG = null;
+
+      $('#register-status').html('Register to start.');
+      $('#register-error').html('');
+
+      $('#auth-status').html('');
+      $('#auth-error').html('');
+
+      $('#sig1').html('');
+      $('#sig2').html('');
+      $('#sig2').removeClass('text-success');
+      $('#sig2').removeClass('text-danger');
+      $('#sig3').html('');
+
+
+
+
+    }
+
+  </script>
+</body>
+
 </html>

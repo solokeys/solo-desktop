@@ -114,7 +114,7 @@ class CtapResponse {
         return this.authData[32];
     }
     get count () {
-        return this.data.readUInt32BE(33);
+        return this.authData.readUInt32BE(33);
     }
     get response () {
         return this.dict;
