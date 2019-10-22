@@ -59,15 +59,15 @@ app.on('activate', () => {
   }
 })
 
-var demo = require('./demo');
-demo.init();
+var routes = require('./main/routes');
+routes.init();
 
-async function eventFunc(cmd, arg, event){
-  demo.sendEvent(cmd, arg, (res)=>{
+async function routeFunc(cmd, arg, event){
+  routes.route(cmd, arg, (res)=>{
     event.reply(cmd, res);
   });
 }
 
-ipcMain.on('msg', (event, arg) => {eventFunc('msg', arg, event);});
-ipcMain.on('register', (event, arg) => {eventFunc('register', arg, event);});
-ipcMain.on('auth', (event, arg) => {eventFunc('auth', arg, event);});
+for (var i in ['msg','register','auth']){
+  ipcMain.on(i, (event, arg) => {routeFunc(i, arg, event);});
+}

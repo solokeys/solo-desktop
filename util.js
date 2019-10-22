@@ -1,6 +1,11 @@
 const base64url = require('base64url');
 var createHash= require('sha.js');
 
+const asn1js = require("asn1js");
+const pkijs = require("pkijs");
+const Certificate = pkijs.Certificate;
+
+
 function isBin(obj)
 {
     return Object.prototype.toString.call(obj).indexOf('Uint8Array') > -1;
@@ -164,8 +169,19 @@ merge: function(buf1,buf2){
     buf3.set(buf1,0);
     buf3.set(buf2,buf1.length);
     return buf3;
-}
+},
 
+cert2publickey: function (x509) {
+    const buffer = new Uint8Array(x509).buffer;
 
+    const asn1 = asn1js.fromBER(buffer);
+    const certificate = new Certificate({ schema: asn1.result });
+    var x = new Uint8Array(certificate.subjectPublicKeyInfo.parsedKey.x);
+    var y = new Uint8Array(certificate.subjectPublicKeyInfo.parsedKey.y);
+
+    var pk = this.merge(x,y);
+    pk = this.merge([0x04],pk);
+    return Buffer.from(pk);
+},
 
 }

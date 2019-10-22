@@ -17,6 +17,18 @@ module.exports = {
         SOLO_GETVERSION: 0x61,
         SOLO_LOADKEY: 0x62,
     },
+    BOOT: {
+        WRITE: 0x40,
+        DONE: 0x41,
+        CHECK: 0x42,
+        ERASE: 0x43,
+        VERSION: 0x44,
+        REBOOT: 0x45,
+        BOOTLOADER: 0x46,
+        DISABLE: 0x47,        
+    },
+
+
 
     CTAP2: {
         GET_INFO: 0x04,

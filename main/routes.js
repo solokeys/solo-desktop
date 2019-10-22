@@ -1,10 +1,9 @@
-var CtapClient = require('./main/ctap').Client;
-var Util = require('./util');
+var CtapClient = require('./ctap').Client;
+var Util = require('../util');
 
 var cdh = Util.sha256bin('123');
-var hid = require('./main/hid');
+var hid = require('./hid');
 var rp = 'solokeys.com';
-
 
 
 module.exports ={
@@ -16,18 +15,31 @@ module.exports ={
         this.client = client;
     },
 
-    sendEvent: async function(cmd, arg, cb){
-        if (cmd == 'register') {
-            var res = await this.register(arg);
-            cb(res);
-        } else if (cmd == 'auth') {
-            var res = await this.auth(arg);
-            cb(res);
+    route: async function(cmd, arg, cb){
+        try{
+            if (cmd == 'register') {
+                var res = await this.register(arg);
+                cb(res);
+            } else if (cmd == 'auth') {
+                var res = await this.auth(arg);
+                cb(res);
+            }
+        } catch (e) {
+            cb(JSON.stringify({error: e.toString()}));
+        }
+    },
 
+    findToken: async function(arg){
+        try{
+            await this.init();
+        }
+        catch{
+            throw 'No token connected'
         }
     },
 
     register: async function(arg){
+        await this.findToken();
 
         var r = (Math.random() * 1000) | 0;
         var r2 = (Math.random() * 1000) | 0;
@@ -41,11 +53,19 @@ module.exports ={
         user.count = mc.count;
         user.credId = Util.bin2hex(mc.credId);
 
+        var attest_pk = Util.cert2publickey(mc.x509);
+        var valid = mc.verify(cdh, attest_pk);
+        if (!valid){
+            throw 'Attestion is invalid in makeCredential'
+        }
+            
         return JSON.stringify(user);
 
     },
 
     auth: async function(arg){
+
+        await this.findToken();
 
         var user = JSON.parse(arg);
 
@@ -64,8 +84,6 @@ module.exports ={
             signature: Util.bin2hex(ga.signature), 
             lowByte: ga.signature[45],
         }
-
-
 
         return JSON.stringify(res);
 

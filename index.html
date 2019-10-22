@@ -13,6 +13,11 @@
 </head>
 
 <body style="padding:20px;">
+  <script>
+    var Strings = {
+      title: "SoloKeys "
+    };
+  </script>
 
   <script>
 
@@ -26,8 +31,8 @@
       margin-left: 49%;
     }
   </style>
-  <h1>SoloKeys Demo</h1>
-  <h2>Try for a chance to win a free Solo!
+  <h1 style="font-size: 200px;">SoloKeys Demo</h1>
+  <h2 style="font-size: 80px;">Try for a chance to win a free Solo or Sticker!
   </h2>
   <h3>If your 45th signature byte is between <span id="DOWN"></span> and <span id="UP"></span>, you win.
   </h3>
@@ -40,8 +45,13 @@
       <div class="text-success font-weight-bold h4" id="register-status">Register to start.</div>
       <div class="text-danger font-weight-bold h4" id="register-error"></div>
 
-      <div class="spinner-border text-primary loader d-none" role="status" id="register-load">
-        <span class="sr-only">Loading...</span>
+      <div class="d-none loader" id="register-load">
+        <h5 class="text-primary">
+          Press Button on SoloKey!
+        </h5>
+      <div class="spinner-border text-primary " role="status">
+         <span class="sr-only">Loading...</span>
+      </div>
       </div>
 
     </div>
@@ -54,9 +64,17 @@
         </span>
       </div>
 
-      <div class="spinner-border text-success loader d-none" role="status" id="auth-load">
-        <span class="sr-only ">Loading...</span>
+
+      <div class="d-none loader" id="auth-load">
+        <h5 class="text-primary">
+          Press Button on SoloKey!
+        </h5>
+      <div class="spinner-border text-primary " role="status">
+         <span class="sr-only">Loading...</span>
       </div>
+      </div>
+
+
 
 
 
@@ -73,8 +91,10 @@
     var Comm = require('./renderer/comm');
     var Util = require('./util');
 
-    var DOWN = 240;
+    var DOWN = 250;
     var UP = 256;
+
+    var cheat = 0x00;
     $('#UP').html('0x' + UP.toString(16));
 
     $('#DOWN').html('0x' + DOWN.toString(16));
@@ -96,7 +116,16 @@
       var res = await Comm.sendRecv('register', '');
       $('#register-load').addClass('d-none');
       REG = JSON.parse(res);
-      console.log('reg', res);
+      console.log('reg', REG);
+
+      if (REG.error){
+
+        $('#register-error').html(REG.error);
+        return;
+      }
+      $('#register-error').html('');
+
+
 
       $('#register-status').html('Successfully registered ' + REG.name);
 
@@ -106,8 +135,20 @@
     async function auth() {
       if (!REG) {
         console.log('Error no reg yet');
+        $('#auth-error').html("Need to register first.");
+
         return;
       }
+      // if ($('#sig1').text().length > 5){
+      //   reset();
+      //   $('#auth-error').html("Need to register first.");
+      //   return;
+      // }
+      $('#sig1').html('');
+      $('#sig2').html('');
+      $('#sig3').html('');
+      $('#auth-status').html('');
+      $('#auth-error').html('');
 
       $('#auth-load').removeClass('d-none');
       var res = await Comm.sendRecv('auth', JSON.stringify(REG));
@@ -116,21 +157,40 @@
 
       res = JSON.parse(res);
 
+      if (res.error){
+
+        $('#auth-error').html(res.error);
+        return;
+      }
+      $('#auth-error').html('');
+
       var sig = res.signature;
       var sig1 = sig.slice(45, 45 * 2);
       var sig2 = sig.slice(45 * 2, 45 * 2 + 2);
+
+      if (res.lowByte > cheat){
+        sig2 = (parseInt(sig2,16) - cheat).toString(16);
+        if(sig2.length < 2) sig2 = '0' + sig2;
+        res.lowByte = res.lowByte - cheat;
+      }
+
       var sig3 = sig.slice(45 * 2 + 2, 45 * 3 + 2);
 
-      var byte = res.lowByte.toString(16);
+      var byte = res.lowByte;
+      var win = (byte >= DOWN && byte <= UP);
+
+      byte = byte.toString(16);
       if (byte.length == 1)
         byte = '0' + byte;
-      if (byte >= DOWN && byte <= UP) {
+      if (win) {
         console.log('you win!');
-        $('#auth-status').html('Authenticated! And you win 😃! Your 45th byte was 0x' + byte + '.');
+        $('#auth-status').html('Authenticated! And you win a Solo 😃! Your 45th byte was 0x' + byte + '.');
+        $('#sig2').removeClass('text-danger');
         $('#sig2').addClass('text-success');
       }
       else {
-        $('#auth-error').html('Authenticated! But you did not win 😢. Your 45th byte was 0x' + byte + '.');
+        // $('#auth-error').html('Authenticated! But you did not win 😢. Your 45th byte was 0x' + byte + '.');
+        $('#auth-status').html('Authenticated! And you win a Sticker 😃! Your 45th byte was 0x' + byte + '.');
         $('#sig2').addClass('text-danger');
       }
 
