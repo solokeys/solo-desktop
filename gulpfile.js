@@ -6,8 +6,8 @@ const livereload = require('gulp-livereload');
 
 // const electron = require('electron-connect').server.create();
 
-gulp.task('reload', function() {
-   livereload.reload();
+gulp.task('reload', async function() {
+   return livereload.reload();
 });
 
 gulp.task('copy', () => {

@@ -56,6 +56,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.6.3",
+    "@blueprintjs/core": "^3.19.1",
     "assert": "^2.0.0",
     "base64url": "^3.0.1",
     "bootstrap": "^4.3.1",
