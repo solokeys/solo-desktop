@@ -1,11 +1,12 @@
 const { ipcMain } = require('electron');
 const { app, BrowserWindow } = require('electron')
 const path = require('path'); 
-require('./main/hid');
+import url from 'url';
+require('./hid');
 
-require('electron-reload')(__dirname, {
+// require('electron-reload')(__dirname, {
 //   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
-});
+// });
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -23,7 +24,12 @@ function createWindow () {
   })
 
   // and load the index.html of the app.
-  win.loadFile('index.html')
+  // win.loadFile('app/index.html')
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }));
 
   // Open the DevTools.
   win.webContents.openDevTools()
@@ -59,7 +65,7 @@ app.on('activate', () => {
   }
 })
 
-var routes = require('./main/routes');
+var routes = require('./routes');
 routes.init();
 
 async function routeFunc(cmd, arg, event){
@@ -68,6 +74,6 @@ async function routeFunc(cmd, arg, event){
   });
 }
 
-for (var i in ['msg','register','auth']){
+for (var i in ['msg','register','auth','list']){
   ipcMain.on(i, (event, arg) => {routeFunc(i, arg, event);});
 }

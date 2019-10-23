@@ -2,14 +2,26 @@
   "name": "solo-desktop",
   "version": "1.0.0",
   "description": "Desktop app for updating and configuring Solo",
-  "main": "index.js",
+  "main": "app/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start-el": "electron .",
+    "start": "gulp default",
+    "release": "gulp release"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/conorpp/solo-desktop.git"
+  },
+  "build": {
+    "appId": "com.solokeys.desktop",
+    "files": [
+      "app/**/*",
+      "util.js",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "publish": null
   },
   "keywords": [
     "Solo",
@@ -24,11 +36,26 @@
   },
   "homepage": "https://github.com/conorpp/solo-desktop#readme",
   "devDependencies": {
+    "@babel/core": "^7.6.4",
+    "@babel/plugin-transform-runtime": "^7.6.2",
+    "@babel/preset-env": "^7.6.3",
+    "@babel/preset-react": "^7.6.3",
     "electron": "^6.0.12",
+    "electron-builder": "^21.2.0",
+    "electron-connect": "^0.6.3",
     "electron-rebuild": "^1.8.6",
-    "electron-reload": "^1.5.0"
+    "electron-reload": "^1.5.0",
+    "gulp": "^4.0.2",
+    "gulp-babel": "^8.0.0",
+    "gulp-clean-css": "^4.2.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-livereload": "^4.0.2",
+    "react": "^16.11.0",
+    "react-dom": "^16.11.0",
+    "run-sequence": "^2.2.1"
   },
   "dependencies": {
+    "@babel/runtime": "^7.6.3",
     "assert": "^2.0.0",
     "base64url": "^3.0.1",
     "bootstrap": "^4.3.1",

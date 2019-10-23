@@ -1,7 +1,7 @@
 const CBOR= require('cbor-sync');
 const CBOR2 = require('cbor');
 
-var Util = require('../Util')
+var Util = require('../util')
 var hid = require('./hid')
 
 const CTAPHID = require('../constants').HID;

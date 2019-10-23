@@ -38,6 +38,10 @@ module.exports ={
         }
     },
 
+    list: async function (arg){
+
+    },
+
     register: async function(arg){
         await this.findToken();
 
