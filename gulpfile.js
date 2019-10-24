@@ -32,9 +32,12 @@ gulp.task('js', () => { // 3.
 
 gulp.task('build', gulp.series('copy', 'html', 'css', 'js'));
 gulp.task('start', gulp.series('build', () => {
-    return exec(
+    var p = exec(
         __dirname+'/node_modules/.bin/electron .'
     ).on('close', () => process.exit());
+    p.stdout.pipe(process.stdout);
+    p.stderr.pipe(process.stderr);
+    return p;
 }));
 
 

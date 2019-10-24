@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     Spinner,
-    Tag,
+    Tag, Icon,
     H4,H3,H2,
     Button, Card, Elevation, 
     Collapse, Classes,
@@ -23,7 +23,7 @@ class DeviceItem extends React.Component {
     constructor(){
         super()
         this.state = {
-            isOpen:false,
+            isOpen:true,
             tab: "ng"
         };
         this.handleTabChange = this.handleTabChange.bind(this);
@@ -37,7 +37,7 @@ class DeviceItem extends React.Component {
     }
     render() {
         var d = this.props.device;
-        var serial = d.serialNumber || d.path;
+        var serial = this.props.device.id;
         var v = d.version;
 
         var defaultTag = '';
@@ -60,13 +60,14 @@ class DeviceItem extends React.Component {
         }
 
         return <div>
-            <Card interactive={true} elevation={Elevation.THREE} onClick={() => { this.onClick() }}>
+            <Card className="pb-1" interactive={true} elevation={Elevation.THREE} onClick={() => { this.onClick() }}>
                 <h5><a href="#">{this.props.device.product}</a></h5>
-                <div className="d-flex flex-row bd-highlight mb-3">
+
+                <div className="d-flex flex-row bd-highlight mb-0">
                     <div className="p-2 bd-highlight">
                         <Tag intent={defaultTag}>{this.props.device.manufacturer}</Tag>
                     </div>
-                    <div className="p-2 bd-highlight">
+                    <div className="p-2 bd-highlight ">
                         Serial: <span className="font-weight-bold"> {serial}</span>
                     </div>
                     {
@@ -76,11 +77,14 @@ class DeviceItem extends React.Component {
                     }
                     <div className="p-2 bd-highlight"><Tag intent={firmwareIntent}>{firmwareTag}</Tag></div>
                 </div>
+                <div className="row bd-highlight mb-0 justify-content-center">
+                    <Icon icon={this.state.isOpen ? "chevron-up" : "chevron-down"} iconSize={28}/>
+                </div>
             </Card>
             <Collapse isOpen={this.state.isOpen} className="ml-4 mt-1">
                 <Card interactive={false}>
                     <Tabs id="TabsExample" onChange={this.handleTabChange} selectedTabId={this.state.tab}>
-                        <Tab id="ng" title="FIDO2" panel={<FIDO2Tab />} />
+                        <Tab id="ng" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
                         <Tabs.Expander />
                     </Tabs>
                 </Card>
@@ -89,7 +93,6 @@ class DeviceItem extends React.Component {
     }
 }
 
-var fakeDevices = [{ name: "solo" },];
 
 export default class App extends React.Component {
 
@@ -99,7 +102,7 @@ export default class App extends React.Component {
             devices: [{ name: "solo" },],
             latestVersion: [0,0,0],
             loading: true,
-            status: 'Checking latest firmware version...',
+            status: 'Checking latest firmware version online...',
             statusIntent: 'secondary',
         }
         this.listDevices = this.listDevices.bind(this);
@@ -160,12 +163,14 @@ export default class App extends React.Component {
                 <div className="p-2 bd-highlight mt-2">
                     <Tag intent={this.state.statusIntent} className=""><div className="">{this.state.status}</div></Tag>
                 </div>
-                {
-                    this.state.loading &&
-                    <div className="p-2 bd-highlight mt-2 float-right">
-                        <Spinner className="" intent="primary" size={50} />
-                    </div>
-                }
+                <div className="p-2 bd-highlight ">
+                    {
+                        this.state.loading &&
+                        <div className="p-2 bd-highlight float-right">
+                            <Spinner className="" intent="primary" size={50} />
+                        </div>
+                    }
+                </div>
             </div>
             <Button
                 icon="refresh"
