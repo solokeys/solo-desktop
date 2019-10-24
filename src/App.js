@@ -54,7 +54,7 @@ class DeviceItem extends React.Component {
                 firmwareTag = 'Unable to check firmware.';
                 firmwareIntent = 'secondary';
             } else if (vnum2 > vnum1) {
-                firmwareTag = 'Out of date.'; // + ' Latest version: ' + v2[0] + '.' + v2[1] + '.' + v2[2] + '';
+                firmwareTag = 'Out of date.'; 
                 firmwareIntent = 'warning';
             }
         }
@@ -126,10 +126,10 @@ export default class App extends React.Component {
             this.state.latestVersion = tag;
             this.setState({
                 latestVersion: tag, 
-                status: 'Latest version: ' + tag[0] + '.' + tag[1] + '.' + tag[2], 
+                status: 'Latest firmware: ' + tag[0] + '.' + tag[1] + '.' + tag[2], 
                 statusIntent: 'success',
             });
-            console.log('Latest version: ', tag);
+            console.log('Latest firmware: ', tag);
         } catch (e) {
             this.setState({
                 latestVersion: [0,0,0], 

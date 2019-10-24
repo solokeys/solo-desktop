@@ -8,7 +8,7 @@ class InfoRow extends React.Component {
     render() {
         var cn = this.props.className || '';
         return (
-            <div className={"d-flex flex-row bd-highlight pb-2" + cn} >
+            <div className={"d-flex flex-row bd-highlight mt-2 " + cn} >
                 {this.props.label && 
                     <span><span className="">{this.props.label}</span>:&nbsp;</span>
                 }
@@ -97,7 +97,7 @@ export default class FIDO2Tab extends React.Component {
     render() {
         return (
             <div>
-                <div className="d-flex flex-row bd-highlight mb-2 ">
+                <div className="d-flex flex-row bd-highlight ">
                     <div className="p-2 bd-highlight">
                         <p>Test FIDO2 features for device <span className="font-weight-bold"> {this.props.device.id}</span>.</p>
                         <p><Tag intent={this.state.statusIntent}>{this.state.status}</Tag></p>
@@ -110,14 +110,14 @@ export default class FIDO2Tab extends React.Component {
                     </div>
                 </div>
                 <div className="d-flex flex-row bd-highlight justify-content-between">
-                    <div className="col-3 p-2 bd-highlight">
-                        <div className="d-flex flex-row bd-highlight mb-3">
-                            <Button icon="shield" intent="warning" text="Verify" onClick={this.verify}/>
+                    <div className="col-3 p-0 bd-highlight">
+                        <div className="d-flex flex-row bd-highlight mb-0">
+                            <Button icon="shield" intent="warning" text="Verify" className="p-3" onClick={this.verify}/>
                         </div>
                         {
                             this.state.verifyResponse &&
-                            <span>
-                                <InfoRow>
+                            <span className="mt-3">
+                                <InfoRow className="">
                                     {
                                         this.state.verifyResponse.variant == 'solokeys' &&
                                         <span>
@@ -143,13 +143,13 @@ export default class FIDO2Tab extends React.Component {
                             </span>
                         }
                     </div>
-                    <div className="col-3 p-2 bd-highlight mb-3">
-                        <div className="d-flex flex-row bd-highlight mb-3">
-                            <Button icon="user" intent="primary" text="Register" onClick={this.register}/>
+                    <div className="col-3 p-0 bd-highlight mb-3">
+                        <div className="d-flex flex-row bd-highlight mb-0">
+                            <Button icon="user" intent="primary" text="Register" className="p-3" onClick={this.register}/>
                         </div>
                         {
                             this.state.registerResponse&&
-                            <span>
+                            <span className="mt-2">
                                 <InfoRow>
                                     <Icon icon="tick" intent="success"/>
                                     Success.
@@ -165,14 +165,14 @@ export default class FIDO2Tab extends React.Component {
                     </div>
 
 
-                    <div className="col-3 p-2 bd-highlight">
-                        <div className="d-flex flex-row bd-highlight mb-3">
-                            <Button icon="key" intent="success" text="Authenticate" onClick={this.authenticate} />
+                    <div className="col-3 p-0 bd-highlight">
+                        <div className="d-flex flex-row bd-highlight mb-0">
+                            <Button icon="key" intent="success" text="Authenticate" className="p-3" onClick={this.authenticate} />
                         </div>
                         {
                             this.state.authenticateResponse&&
 
-                            <span>
+                            <span className="mt-2">
                                 <InfoRow>
                                     <Icon icon="tick" intent="success"/>
                                     Success.
