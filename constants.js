@@ -37,6 +37,12 @@ module.exports = {
         GET_NEXT_ASSERTION: 0x08,
         CLIENT_PIN: 0x06,
         RESET: 0x07,
+
+        getRetries: 1,
+        getKeyAgreement: 2,
+        setPin: 3,
+        changePin: 4,
+        getPinToken: 5,
     },
 
     CTAP1: {

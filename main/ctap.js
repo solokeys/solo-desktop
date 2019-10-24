@@ -10,16 +10,30 @@ const CTAP1 = require('../constants').CTAP1;
 const ERROR = require('../constants').ERROR;
 
 const EC = require('elliptic').ec;
-var createHash= require('sha.js');
+const createHash= require('sha.js');
+const createHmac = require('create-hmac');
+const aesjs = require('aes-js');
+const assert = require('assert');
 
 var DEBUG = 0;
 
-
+async function getParam(p){
+  if (p instanceof Promise) p = await p;
+  return p;
+}
 
 class CtapClient {
     constructor(transport){
         this.transport = transport;
     }
+
+    async sendRecv(cmd, data){
+        if (DEBUG) console.log('<<', cmd.toString(16), Util.obj2hex(data))
+        var res = await this.transport.sendRecv(cmd, data);
+        if (DEBUG) console.log('>>', Util.obj2hex(res))
+        return res;
+    }
+
 
     async getInfo(){
         var res = await this.sendRecv(CTAPHID.CBOR, [CTAP2.GET_INFO]);
@@ -35,12 +49,18 @@ class CtapClient {
      * @param {Object} opts credId, pinAuth, extensions
     */
     async makeCredential(rpId, cdh, user, opts){
+        opts = opts || {};
         var req = new Map();
 
         req.set(1, cdh);
         req.set(2, {id: rpId, name: rpId});
         req.set(3, user);
         req.set(4, [{type:'public-key', alg:-7}]);
+
+        if(opts.pin || opts.pinToken){
+            var pinAuth = await this._getPinAuth(opts.pin, cdh, {pinToken: opts.pinToken});
+            req.set(8, pinAuth);
+        }
         
         var cbor = CBOR2.encode(req);
 
@@ -58,6 +78,7 @@ class CtapClient {
      * @param {Object} opts credId, pinAuth, extensions
     */
     async getAssertion(rpId, cdh, opts){
+        opts = opts || {};
         var req = new Map();
         req.set(1, rpId);
         req.set(2, cdh);
@@ -67,22 +88,230 @@ class CtapClient {
             req.set(3, allow_list)
         }
 
+        if(opts.pin || opts.pinToken){
+            var pinAuth = await this._getPinAuth(opts.pin, cdh, {pinToken: opts.pinToken});
+            req.set(6, pinAuth);
+        }
+ 
+
         var cbor = CBOR2.encode(req);
         var res = await this.sendRecv(CTAPHID.CBOR, Util.merge([CTAP2.GET_ASSERTION], cbor));
 
         return (new GetAssertionResponse(res));
     }
 
-    async sendRecv(cmd, data){
-        if (DEBUG) console.log('<<', cmd.toString(16), Util.obj2hex(data))
-        var res = await this.transport.sendRecv(cmd, data);
-        if (DEBUG) console.log('>>', Util.obj2hex(res))
-        return res;
+    clientPinRequest(cmd){
+        var req = new Map();
+        req.set(1,1);   // pin protocol
+        req.set(2,cmd);   // sub command
+        return req;
     }
 
-    async setPin(){
+    /** getRetries
+     * Returns number of attempts remaining for PIN.
+    */
+    async getRetries()
+    {
+        var req = this.clientPinRequest(CTAP2.getRetries);
+        var cbor = CBOR2.encode(req);
+        var res = await this.sendRecv(CTAPHID.CBOR, Util.merge([CTAP2.CLIENT_PIN], cbor));
+        res = new ClientPinResponse(res);
+        return res.retries;
+    }
+
+    async getSharedSecret()
+    {
+        ////
+        var req = this.clientPinRequest(CTAP2.getKeyAgreement);
+        var cbor = CBOR2.encode(req);
+        var res = await this.sendRecv(CTAPHID.CBOR, Util.merge([CTAP2.CLIENT_PIN], cbor));
+        res = new ClientPinResponse(res);
+        ////
+
+        var device_pk = res.pk;
+        this.device_pk = device_pk
+        device_pk = Util.bin2hex(device_pk)
+
+        var ec = new EC('p256');
+        device_pk = ec.keyFromPublic(device_pk,'hex');
+        var rng = new Uint8Array(32);
+        for (var i = 0; i < 32; i++){
+            rng[i] = (Math.random() * 255) | 0;
+        }
+        this.keypair = await getParam(ec.genKeyPair({
+            entropy: Util.bin2str(rng),
+            curve: 'p256',
+        }));
+
+        this.shared = await getParam(this.keypair.derive(device_pk.getPublic()));
+        var s = this.shared.toString(16)
+        while(s.length < 64)
+        {
+            s = '0' + s;
+        }
+
+        this.shared = Util.hex2bin(s);
+
+        this.shared = Util.hex2bin(createHash('sha256').update(this.shared).digest('hex'))
+
+        return this.shared;
+    }
+
+    async setPin(pin, credId){
+        await this.getSharedSecret();
+
+        pin = Util.bin2hex(Util.str2bin(pin));
+
+        var pinL = pin.length;
+        for (var i = 0 ; i<(128-pinL); i+=2)
+        {
+            pin += '00';
+        }
+
+        assert(pin.length == 128)
+        pin = aesjs.utils.hex.toBytes(pin);
+        assert(pin.length == 64)
+        assert(this.shared.length == 32)
+
+        const iv = Buffer.alloc(16, 0);
+        var aesCbc = new aesjs.ModeOfOperation.cbc(this.shared, iv);
+        var pinEnc = aesCbc.encrypt(pin);
+        var encryptedHex = aesjs.utils.hex.fromBytes(pinEnc);
+
+
+        var pinAuth = Util.hex2bin(createHmac('sha256', this.shared).update(pinEnc).digest('hex')).slice(0,16);
+        var pk = Util.hex2bin(this.keypair.getPublic().encode('hex'));
+
+        assert(pk.length == 65);
+        assert(pinEnc.length == 64);
+        assert(pinAuth.length == 16);
+
+        var req = this.clientPinRequest(CTAP2.setPin);
+        var coseKey = new Map();
+        coseKey.set(1,2);
+        coseKey.set(3,-25);
+        coseKey.set(-1,1);
+        coseKey.set(-2,pk.slice(1,1+32));
+        coseKey.set(-3,pk.slice(1+32,1+32+32));
+        req.set(3, coseKey);
+        req.set(4, pinAuth);
+        req.set(5, Buffer.from(pinEnc));
+        var cbor = CBOR2.encode(req);
+        var res = await this.sendRecv(CTAPHID.CBOR, Util.merge([CTAP2.CLIENT_PIN], cbor))
+        res = new ClientPinResponse(res);
+        return res.dict;
+    }
+
+    async changePin(curPin, newPin, credId)
+    {
+        var ts;
+        await this.getSharedSecret();
+
+        newPin = Util.bin2hex(Util.str2bin(newPin));
+
+        var pinL = newPin.length;
+        for (var i = 0 ; i<(128-pinL); i+=2)
+        {
+            newPin += '00';
+        }
+        var newPinBin = Util.hex2bin(newPin);
+
+        var curPinBin = (Util.str2bin(curPin));
+        var curPinHash = Util.hex2bin(createHash('sha256').update(curPinBin).digest('hex')).slice(0,16);
+
+        const iv = Buffer.alloc(16, 0);
+        var aesCbc = new aesjs.ModeOfOperation.cbc(this.shared, iv);
+        var curPinHashEnc = aesCbc.encrypt(curPinHash);
+        var curPinHashEncHex = aesjs.utils.hex.fromBytes(curPinHashEnc);
+
+        aesCbc = new aesjs.ModeOfOperation.cbc(this.shared, iv);
+        var newPinEnc = aesCbc.encrypt(newPinBin);
+        var newPinEncHex = aesjs.utils.hex.fromBytes(newPinEnc);
+
+        var pinAuthHex = createHmac('sha256', this.shared).update(Util.merge(newPinEnc, curPinHashEnc)).digest('hex')
+        var pinAuth = Util.hex2bin(pinAuthHex).slice(0,16);
+
+        var pk = Util.hex2bin(this.keypair.getPublic().encode('hex'));
+
+        assert(pk.length == 65);
+        assert(newPinEnc.length == 64);
+        assert(curPinHashEnc.length == 16);
+        assert(pinAuth.length == 16);
+
+        var req = this.clientPinRequest(CTAP2.changePin);
+        var coseKey = new Map();
+        coseKey.set(1,2);
+        coseKey.set(3,-25);
+        coseKey.set(-1,1);
+        coseKey.set(-2,pk.slice(1,1+32));
+        coseKey.set(-3,pk.slice(1+32,1+32+32));
+        req.set(3, coseKey);
+        req.set(4, pinAuth);
+        req.set(5, Buffer.from(newPinEnc));
+        req.set(6, Buffer.from(curPinHashEnc));
+        var cbor = CBOR2.encode(req);
+        var res = await this.sendRecv(CTAPHID.CBOR, Util.merge([CTAP2.CLIENT_PIN], cbor))
+        res = new ClientPinResponse(res);
+        return res.dict;
 
     }
+
+    async getPinToken(pin, credId)
+    {
+        await this.getSharedSecret();
+
+        var curPinBin = (Util.str2bin(pin));
+        var curPinHash = Util.hex2bin(createHash('sha256').update(curPinBin).digest('hex')).slice(0,16);
+
+        const iv = Buffer.alloc(16, 0);
+        var aesCbc = new aesjs.ModeOfOperation.cbc(this.shared, iv);
+        var curPinHashEnc = aesCbc.encrypt(curPinHash);
+        var curPinHashEncHex = aesjs.utils.hex.fromBytes(curPinHashEnc);
+
+        var pk = Util.hex2bin(this.keypair.getPublic().encode('hex'));
+
+        assert(pk.length == 65);
+        assert(curPinHashEnc.length == 16);
+
+        var req = this.clientPinRequest(CTAP2.getPinToken);
+        var coseKey = new Map();
+        coseKey.set(1,2);
+        coseKey.set(3,-25);
+        coseKey.set(-1,1);
+        coseKey.set(-2,pk.slice(1,1+32));
+        coseKey.set(-3,pk.slice(1+32,1+32+32));
+        req.set(3, coseKey);
+        req.set(6, Buffer.from(curPinHashEnc));
+        var cbor = CBOR2.encode(req);
+        var res = await this.sendRecv(CTAPHID.CBOR, Util.merge([CTAP2.CLIENT_PIN], cbor))
+        res = new ClientPinResponse(res);
+
+        var pinTokenEnc = res.pinTokenEnc;
+        aesCbc = new aesjs.ModeOfOperation.cbc(this.shared, iv);
+        var pinToken = aesCbc.decrypt(pinTokenEnc);
+        var pinTokenHex = aesjs.utils.hex.fromBytes(pinToken);
+
+        return Util.hex2bin(pinTokenHex);
+
+    }
+
+    async _getPinAuth(pin, cdh, opts){
+        opts = opts || {};
+        var credId = opts.credId;
+        var pinToken = opts.pinToken;
+        if (!pinToken) pinToken = await this.getPinToken(pin, credId);
+        var pinAuth = Util.hex2bin(createHmac('sha256', pinToken).update(cdh).digest('hex')).slice(0,16);
+        return pinAuth;
+    }
+
+
+    async reset(credId)
+    {
+        var res;
+        res = await this.sendRecv(CTAPHID.CBOR, [CTAP2.RESET]);
+    }
+
+
 }
 
 /** CtapResponse
@@ -201,6 +430,28 @@ class MakeCredentialResponse extends CtapResponse {
 
 }
 
+class ClientPinResponse extends CtapResponse {
+    constructor(...args){
+        super(...args);
+    }
+
+    get retries (){
+        return this.dict[3];
+    }
+
+    get coseKey(){
+        return this.dict[1];
+    }
+    get pk () {
+        var key = this.coseKey;
+        var b = ('04'+ Util.bin2hex(key[-2]) + Util.bin2hex(key[-3]));
+        b = Util.hex2bin(b);
+        return b;
+    }
+    get pinTokenEnc() {
+        return this.dict[2];
+    }
+}
 class CtapError extends Error{
     constructor (...args) {
         var s = 'Unknown error: ' + args[0];
@@ -231,6 +482,8 @@ if (require.main === module) {
         var cdh = Util.sha256bin('123');
         var rp = 'solokeys.com';
 
+        console.log('reset');
+        await client.reset();
 
         console.log('MakeCredential');
         var mc = await client.makeCredential(rp, cdh, {
@@ -238,12 +491,14 @@ if (require.main === module) {
             displayName: 'SoloKey',
             id: Buffer.from([1,2,3,4,5,6,7,8])
         });
+        assert(! (mc.flags & (1<<2)));
 
 
         console.log('GetAssertion');
         var ga = await client.getAssertion(rp, cdh, {
             credId: mc.credId,
         });
+        assert(! (ga.flags & (1<<2)));
 
 
         console.log('Verify');
@@ -251,6 +506,46 @@ if (require.main === module) {
             throw 'Signature invalid';
         }
 
+        console.log('getRetries', await client.getRetries());
+        await client.getRetries();
+
+        console.log('getSharedSecret');
+        var r = await client.getSharedSecret();
+        console.log(r);
+
+
+        console.log('setPin');
+        var pin1 = '1234';
+        var r = await client.setPin(pin1);
+        console.log(r);
+
+        console.log('changePin');
+        var pin2 = '5678';
+        r = await client.changePin(pin1, pin2);
+        console.log(r);
+
+        console.log('getPinToken');
+        r = await client.getPinToken(pin2);
+        console.log(r);
+
+        console.log('getPinAuth');
+        r = await client._getPinAuth(pin2, cdh);
+        console.log(r);
+
+        console.log('MakeCredential.pin');
+        var mc = await client.makeCredential(rp, cdh, {
+            name: 'solokey',
+            displayName: 'SoloKey',
+            id: Buffer.from([1,2,3,4,5,6,7,8]),
+        }, {pin: pin2});
+        assert(mc.flags & (1<<2));
+
+        console.log('GetAssertion.pin');
+        var ga = await client.getAssertion(rp, cdh, {
+            credId: mc.credId,
+            pin: pin2
+        });
+        assert(ga.flags & (1<<2));
 
 
     }
