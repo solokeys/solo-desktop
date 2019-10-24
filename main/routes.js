@@ -62,7 +62,7 @@ var rp = 'solokeys.com';
         try{
             var dev = hid.open(device);
             var client = new CtapClient(dev);
-            var mc = await client.makeCredential(rp, cdh, user);
+            var mc = await client.makeCredential(rp, cdh, user, device.opts);
             user.count = mc.count;
             user.credId = Util.bin2hex(mc.credId);
 
@@ -106,10 +106,11 @@ var rp = 'solokeys.com';
 
             cdh = Util.sha256bin(r2 + '123' + r);
 
+            var opts = device.opts || {};
+            opts.credId = Util.hex2bin(user.credId);
+
             console.log('GetAssertion', user);
-            var ga = await client.getAssertion(rp, cdh, {
-                credId: Util.hex2bin(user.credId),
-            });
+            var ga = await client.getAssertion(rp, cdh, opts);
 
             var res = {
                 count: ga.count,
