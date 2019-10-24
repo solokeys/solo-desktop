@@ -127,6 +127,71 @@ var rp = 'solokeys.com';
     });
 })();
 
+(()=>{
+    var cmd = 'setPin';
+    ipcMain.on(cmd, async (event, device) => {
+
+        try {
+            var dev = hid.open(device);
+            var client = new CtapClient(dev);
+
+            var pin = device.pin;
+
+            await client.setPin(pin);
+
+        } catch (e) {
+            event.reply(cmd, { error: e.toString() });
+            return;
+        }
+        
+        event.reply(cmd,{status: 'success'});
+
+    });
+})();
+
+(()=>{
+    var cmd = 'changePin';
+    ipcMain.on(cmd, async (event, device) => {
+
+        try {
+            var dev = hid.open(device);
+            var client = new CtapClient(dev);
+
+            var pin = device.pin;
+            var newPin = device.newPin;
+
+            await client.changePin(pin, newPin);
+
+        } catch (e) {
+            event.reply(cmd, { error: e.toString() });
+            return;
+        }
+        
+        event.reply(cmd,{status: 'success'});
+
+    });
+})();
+
+(()=>{
+    var cmd = 'reset';
+    ipcMain.on(cmd, async (event, device) => {
+
+        try {
+            var dev = hid.open(device);
+            var client = new CtapClient(dev);
+
+            await client.reset();
+
+        } catch (e) {
+            event.reply(cmd, { error: e.toString() });
+            return;
+        }
+        
+        event.reply(cmd,{status: 'success'});
+
+    });
+})();
+
 module.exports ={
 
     init: async function(){
