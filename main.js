@@ -1,6 +1,8 @@
 const { ipcMain } = require('electron');
 const { app, BrowserWindow } = require('electron')
 const path = require('path'); 
+const routes = require('./routes');
+
 import url from 'url';
 require('./hid');
 
@@ -65,15 +67,3 @@ app.on('activate', () => {
   }
 })
 
-var routes = require('./routes');
-routes.init();
-
-async function routeFunc(cmd, arg, event){
-  routes.route(cmd, arg, (res)=>{
-    event.reply(cmd, res);
-  });
-}
-
-for (var i in ['msg','register','auth','list']){
-  ipcMain.on(i, (event, arg) => {routeFunc(i, arg, event);});
-}

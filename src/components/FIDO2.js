@@ -1,5 +1,5 @@
 import React from 'react';
-import { H3, Button, Card, Elevation, Collapse, Classes, HTMLTable} from "@blueprintjs/core";
+import { H3, Button, Card, Tag, Collapse, Classes, HTMLTable} from "@blueprintjs/core";
 
 export default class FIDO2Tab extends React.Component {
     constructor() {
@@ -21,10 +21,13 @@ export default class FIDO2Tab extends React.Component {
                     <tbody>
                         <tr>
                             <td>
+                                <Button icon="shield" intent="warning" text="Verify" />
+                            </td>
+                            <td>
                                 <Button icon="user" intent="primary" text="Register" />
                             </td>
                             <td>
-                                <Button icon="lock" intent="success" text="Authenticate" />
+                                <Button icon="key" intent="success" text="Authenticate" />
                             </td>
                         </tr>
                     </tbody>

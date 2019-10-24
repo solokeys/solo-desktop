@@ -1,3 +1,4 @@
+const ipcMain = require('electron').ipcMain;
 var CtapClient = require('./ctap').Client;
 var Util = require('../util');
 
@@ -5,6 +6,37 @@ var cdh = Util.sha256bin('123');
 var hid = require('./hid');
 var rp = 'solokeys.com';
 
+// routes.init();
+
+// async function routeFunc(cmd, arg, event){
+//   routes.route(cmd, arg, (res)=>{
+//     event.reply(cmd, res);
+//   });
+// }
+
+// for (var i in ['msg','register','auth','list']){
+//   ipcMain.on(i, (event, arg) => {routeFunc(i, arg, event);});
+// }
+
+ipcMain.on('list', async (event, arg) => {
+    var devs = hid.devices();
+    for (var i = 0; i < devs.length; i++){
+        if (devs[i].manufacturer.toLowerCase() == 'solokeys'){
+            var dev = hid.open(devs[i]);
+            var res = [0,0,0];
+            try{
+                var res = await dev.sendRecv(0x61, [0, 0, 0, 0]);
+            } catch (e) {
+                console.log('error', e);
+            }
+            dev.close();
+            devs[i].isSolo = true;
+            devs[i].version = res;
+            console.log('Solo version is ', res);
+        }
+    }
+    event.reply('list', devs);
+});
 
 module.exports ={
 
