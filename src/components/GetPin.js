@@ -118,7 +118,7 @@ export default class GetPin extends React.Component {
                                 <Button icon="cross" intent="danger" text="Cancel" className="p-3" onClick={this.onCancel} />
                             </div>
                             <div className="col-2 p-0 bd-highlight mw-100">
-                                <Button intent="success" text="Continue" className="p-3 text-wrap" onClick={this.onContinue} />
+                                <Button icon="arrow-right" intent="success" text="Continue" className="p-3 text-wrap" onClick={this.onContinue} />
                             </div>
                         </div>
                     </div>

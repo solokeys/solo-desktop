@@ -8,6 +8,7 @@ import {
     Tabs, Tab} from "@blueprintjs/core";
 import Content from './components/Content'
 import FIDO2Tab from './components/FIDO2'
+import PINTab from './components/PIN'
 
 const ReactPanel = ()=>(
     <div>
@@ -24,7 +25,7 @@ class DeviceItem extends React.Component {
         super()
         this.state = {
             isOpen:true,
-            tab: "ng",
+            tab: "pi",
             versions: [],
             extensions: [],
             hasButton: true,
@@ -48,6 +49,11 @@ class DeviceItem extends React.Component {
             var hasButton = info[4].up;
             var hasPin = info[4].clientPin;
             var hasRk = info[4].rk;
+            this.props.device.versions = versions;
+            this.props.device.extensions = extensions;
+            this.props.device.hasButton = hasButton;
+            this.props.device.hasPin = hasPin;
+            this.props.device.hasRk= hasRk;
             this.setState(
                 {
                     versions: versions,
@@ -127,7 +133,8 @@ class DeviceItem extends React.Component {
             <Collapse isOpen={this.state.isOpen} className="ml-4 mt-1">
                 <Card interactive={false}>
                     <Tabs id="TabsExample" onChange={this.handleTabChange} selectedTabId={this.state.tab}>
-                        <Tab id="ng" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
+                        <Tab id="fi" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
+                        <Tab id="pi" title="Manage PIN" panel={<PINTab device={this.props.device}/> } />
                         <Tabs.Expander />
                     </Tabs>
                 </Card>
