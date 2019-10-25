@@ -70,6 +70,7 @@ var rp = 'solokeys.com';
         try{
             var dev = hid.open(device);
             var client = new CtapClient(dev);
+            console.log('got options:', device.opts);
             var mc = await client.makeCredential(rp, cdh, user, device.opts);
             user.count = mc.count;
             user.credId = Util.bin2hex(mc.credId);
@@ -180,6 +181,32 @@ var rp = 'solokeys.com';
 
     });
 })();
+
+(()=>{
+    var cmd = 'getPinToken';
+    ipcMain.on(cmd, async (event, device) => {
+        console.log(cmd);
+
+        try {
+            var dev = hid.open(device);
+            var client = new CtapClient(dev);
+
+            var pin = device.pin;
+
+            var p = await client.getPinToken(pin);
+
+
+        } catch (e) {
+            event.reply(cmd, { error: e.toString(), code: e.code });
+            return;
+        }
+        
+        event.reply(cmd,{status: 'success', pinToken: p});
+
+    });
+})();
+
+
 
 (()=>{
     var cmd = 'reset';

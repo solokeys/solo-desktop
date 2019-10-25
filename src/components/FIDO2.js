@@ -1,6 +1,12 @@
 import React from 'react';
-import { Spinner, H3, Button, Card, Tag, Collapse, Classes, HTMLTable, Icon} from "@blueprintjs/core";
+import { H1,H2,H3,H4,H5,
+    Spinner, Classes, Button, Card, Tag, Overlay, Icon,
+        Elevation, InputGroup, FormGroup} from "@blueprintjs/core";
+import { timingSafeEqual } from 'crypto';
+import GetPin from './GetPin';
 const Comm = require('../comm');
+const Constants = require('../../constants');
+                
 
 
 
@@ -18,6 +24,7 @@ class InfoRow extends React.Component {
     }
 }
 
+
 export default class FIDO2Tab extends React.Component {
     constructor() {
         super();
@@ -28,12 +35,50 @@ export default class FIDO2Tab extends React.Component {
             verifyResponse: null,
             registerResponse: null,
             authenticateResponse: null,
-            pin:'',
             pinToken:'',
+            afterPinFunc: null,
+            needPin: false,
         }
         this.register = this.register.bind(this);
         this.verify= this.verify.bind(this);
         this.authenticate= this.authenticate.bind(this);
+        this.getPinThen= this.getPinThen.bind(this);
+    }
+
+    async getPinThen(func){
+        this.setState({needPin: true, afterPinFunc: (pin, pinToken) => {
+            console.log('Got pinToken!' ,pinToken);
+            this.state.pinToken = pinToken;
+            this.props.device.opts = {};
+            this.props.device.opts.pinToken = this.state.pinToken;
+            this.setState({needPin:false});
+            func();
+        }});
+    }
+
+    handleRes(res, afterPinFunc){
+        if (res.error){
+            if (res.code == Constants.ERROR.CTAP2_ERR_PIN_REQUIRED)
+            {
+                this.getPinThen(afterPinFunc);
+            } else if (res.code == Constants.ERROR.CTAP2_ERR_PIN_AUTH_INVALID) {
+                this.setState({pinToken:''});
+                this.getPinThen(afterPinFunc);
+            }
+            else{
+                this.setState({loading:false, status: '' + res.error, statusIntent: 'danger'});
+            }
+
+        }else {
+            var state = {loading:false, status: 'Device is ready.', statusIntent: 'success',};
+            if (afterPinFunc == this.authenticate)
+                state.authenticateResponse = res;
+            else if (afterPinFunc == this.register)
+                state.registerResponse = res;
+            else
+                state.verifyResponse = res;
+            this.setState(state);
+        }
     }
 
     async authenticate(){
@@ -44,17 +89,10 @@ export default class FIDO2Tab extends React.Component {
         this.setState({ loading: true, status: 'Press button on device...', statusIntent: 'warning' });
 
         this.props.device.user = this.state.registerResponse;
-        this.props.device.pin = this.state.pin;
 
         var auth = await Comm.sendRecv('authenticate', this.props.device);
+        this.handleRes(auth, this.authenticate);
 
-        if (auth.error){
-            this.setState({loading:false, status: 'Error: ' + auth.error, statusIntent: 'danger'});
-
-        }else {
-            this.setState({loading:false, status: 'Device is ready.', statusIntent: 'success',
-            authenticateResponse: auth});
-        }
 
     }
 
@@ -64,16 +102,8 @@ export default class FIDO2Tab extends React.Component {
         this.setState({loading:true, status: 'Press button on device...', statusIntent: 'warning'});
 
         var reg = await Comm.sendRecv('register', this.props.device);
-        this.props.device.pin = this.state.pin;
 
-        if (reg.error){
-            this.setState({loading:false, status: 'Error: ' + reg.error, statusIntent: 'danger'});
-
-        }else {
-            this.setState({loading:false, status: 'Device is ready.', statusIntent: 'success',
-            registerResponse: reg});
-        }
-
+        this.handleRes(reg, this.register);
         console.log('reg',reg);
 
     }
@@ -86,13 +116,7 @@ export default class FIDO2Tab extends React.Component {
 
         var reg = await Comm.sendRecv('register', this.props.device);
 
-        if (reg.error){
-            this.setState({loading:false, status: 'Error: ' + reg.error, statusIntent: 'danger'});
-
-        }else {
-            this.setState({loading:false, status: 'Device is ready.', statusIntent: 'success',
-            verifyResponse: reg});
-        }
+        this.handleRes(reg, this.verify);
 
         console.log('reg',reg);
 
@@ -101,10 +125,20 @@ export default class FIDO2Tab extends React.Component {
     render() {
         return (
             <div>
+                {this.state.needPin &&
+                    <GetPin isOpen={true} device={this.props.device} onContinue={this.state.afterPinFunc}
+                        onCancel={()=>(this.setState({needPin:false, loading:false, status: 'Device is ready', statusIntent:'success'}))}/>
+                }
                 <div className="d-flex flex-row bd-highlight ">
                     <div className="p-2 bd-highlight">
                         <p>Test FIDO2 features for device <span className="font-weight-bold"> {this.props.device.id}</span>.</p>
-                        <p><Tag intent={this.state.statusIntent}>{this.state.status}</Tag></p>
+                        <p>
+                            <Tag className="mr-2" intent={this.state.statusIntent}>{this.state.status}</Tag>
+                            {
+                                this.state.pinToken &&
+                                <Tag intent="success">Have pinToken</Tag>
+                            }
+                        </p>
                     </div>
                     <div className="p-2 bd-highlight">
                         {

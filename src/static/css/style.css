@@ -1,4 +1,6 @@
 
-/* @import "~@blueprintjs/core/lib/css/blueprint.css"; */
-
-/* @import "~@blueprintjs/icons/lib/css/blueprint-icons.css"; */
+.abs-center{
+    left:50%;
+    top:50%;
+    transform: translate(-50%, -50%);
+}
