@@ -26,21 +26,29 @@ var rp = 'solokeys.com';
         for (var i = 0; i < devs.length; i++){
             var serial = devs[i].serialNumber || devs[i].path;
             devs[i].id = serial;
+            var dev = hid.open(devs[i]);
+            var client = new CtapClient(dev);
+            try {
+                var info = await client.getInfo();
+                devs[i].info = info;
+            } catch (e) {
+                console.log('Error getting CTAP2 info.', e);
+            }
+
             if (devs[i].manufacturer.toLowerCase() == 'solokeys'){
-                var dev = hid.open(devs[i]);
                 var res = [0,0,0];
                 try{
                     res = await dev.sendRecv(0x61, [0, 0, 0, 0]);
                 } catch (e) {
                     console.log('error', e);
                 }
-                dev.close();
                 if (res && res[0] > 0) {
                     devs[i].isSolo = true;
                     devs[i].version = res;
                     console.log('Solo version is ', res);
                 }
             }
+            dev.close();
         }
         console.log('reply to ', cmd);
         event.reply(cmd, devs);
@@ -82,7 +90,7 @@ var rp = 'solokeys.com';
                 throw 'Attestation is invalid in makeCredential'
             }
         } catch(e) {
-            event.reply(cmd, {error: e.toString()});
+            event.reply(cmd, {error: e.toString(), code: e.code});
             return;
         }
             
@@ -119,7 +127,7 @@ var rp = 'solokeys.com';
                 user: user,
             }
         } catch (e) {
-            event.reply(cmd, { error: e.toString() });
+            event.reply(cmd, { error: e.toString(), code: e.code });
             return;
         }
         
@@ -141,7 +149,7 @@ var rp = 'solokeys.com';
             await client.setPin(pin);
 
         } catch (e) {
-            event.reply(cmd, { error: e.toString() });
+            event.reply(cmd, { error: e.toString(), code: e.code });
             return;
         }
         
@@ -164,7 +172,7 @@ var rp = 'solokeys.com';
             await client.changePin(pin, newPin);
 
         } catch (e) {
-            event.reply(cmd, { error: e.toString() });
+            event.reply(cmd, { error: e.toString(), code: e.code });
             return;
         }
         
@@ -184,7 +192,7 @@ var rp = 'solokeys.com';
             await client.reset();
 
         } catch (e) {
-            event.reply(cmd, { error: e.toString() });
+            event.reply(cmd, { error: e.toString(), code: e.code});
             return;
         }
         

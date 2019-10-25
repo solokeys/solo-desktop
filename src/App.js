@@ -24,7 +24,12 @@ class DeviceItem extends React.Component {
         super()
         this.state = {
             isOpen:true,
-            tab: "ng"
+            tab: "ng",
+            versions: [],
+            extensions: [],
+            hasButton: true,
+            hasPin: false,
+            hasRk: true,
         };
         this.handleTabChange = this.handleTabChange.bind(this);
     }
@@ -34,6 +39,25 @@ class DeviceItem extends React.Component {
     handleTabChange(t){
         console.log('tab change',t);
         this.setState({tab:t});
+    }
+    componentDidMount(){
+        var info = this.props.device.info;
+        if (info){
+            var versions = info[1];
+            var extensions = info[2];
+            var hasButton = info[4].up;
+            var hasPin = info[4].clientPin;
+            var hasRk = info[4].rk;
+            this.setState(
+                {
+                    versions: versions,
+                    extensions: extensions,
+                    hasButton: hasButton,
+                    hasPin: hasPin,
+                    hasRk: hasRk,
+                }
+            )
+        }
     }
     render() {
         var d = this.props.device;
@@ -52,7 +76,7 @@ class DeviceItem extends React.Component {
             var vnum2 = ((v2[0] << 16) | (v2[1] << 8) | (v2[2] << 0)); 
             if (vnum2 == 0) {
                 firmwareTag = 'Unable to check firmware.';
-                firmwareIntent = 'secondary';
+                firmwareIntent = 'warning';
             } else if (vnum2 > vnum1) {
                 firmwareTag = 'Out of date.'; 
                 firmwareIntent = 'warning';
@@ -76,6 +100,25 @@ class DeviceItem extends React.Component {
                         </div>
                     }
                     <div className="p-2 bd-highlight"><Tag intent={firmwareIntent}>{firmwareTag}</Tag></div>
+
+                    <div className="pr-1 pl-1 pt-2 bd-highlight">
+                        {this.state.versions.map((item, key) =>
+                            <Tag className="mr-1" key={key} intent="success">{item}</Tag>
+                        )}
+                        {this.state.extensions.map((item, key) => 
+                            <Tag className="mr-1" key={key} intent="primary">{item}</Tag>
+                        )}
+
+
+                    </div>
+                        {/* <div className="p-2 bd-highlight"> */}
+                            {/* </div> */}
+                    {this.state.hasPin &&
+                        <div className="p-2 bd-highlight"><Tag intent="secondary" icon="lock">Pin set</Tag></div>
+                    }
+
+
+
                 </div>
                 <div className="row bd-highlight mb-0 justify-content-center">
                     <Icon icon={this.state.isOpen ? "chevron-up" : "chevron-down"} iconSize={28}/>

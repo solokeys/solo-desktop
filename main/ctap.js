@@ -466,6 +466,8 @@ class CtapError extends Error{
 
         super(s)
 
+        this.code = code;
+
     }
 }
 

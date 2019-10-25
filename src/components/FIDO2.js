@@ -28,6 +28,8 @@ export default class FIDO2Tab extends React.Component {
             verifyResponse: null,
             registerResponse: null,
             authenticateResponse: null,
+            pin:'',
+            pinToken:'',
         }
         this.register = this.register.bind(this);
         this.verify= this.verify.bind(this);
@@ -42,6 +44,7 @@ export default class FIDO2Tab extends React.Component {
         this.setState({ loading: true, status: 'Press button on device...', statusIntent: 'warning' });
 
         this.props.device.user = this.state.registerResponse;
+        this.props.device.pin = this.state.pin;
 
         var auth = await Comm.sendRecv('authenticate', this.props.device);
 
@@ -61,6 +64,7 @@ export default class FIDO2Tab extends React.Component {
         this.setState({loading:true, status: 'Press button on device...', statusIntent: 'warning'});
 
         var reg = await Comm.sendRecv('register', this.props.device);
+        this.props.device.pin = this.state.pin;
 
         if (reg.error){
             this.setState({loading:false, status: 'Error: ' + reg.error, statusIntent: 'danger'});

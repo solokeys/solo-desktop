@@ -1,10 +1,19 @@
 const { ipcMain } = require('electron');
 const { app, BrowserWindow } = require('electron')
 const path = require('path'); 
-const routes = require('./routes');
+require('./routes');
+const contextMenu = require('electron-context-menu');
 
 import url from 'url';
 require('./hid');
+
+const isDev = require('electron-is-dev');
+
+if (isDev) {
+	console.log('Running in development');
+} else {
+	console.log('Running in production');
+}
 
 // require('electron-reload')(__dirname, {
 //   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
@@ -12,14 +21,48 @@ require('./hid');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
+
+contextMenu({
+    prepend: (defaultActions, params, browserWindow) => [
+        {
+            label: 'Rainbow',
+            // Only show it when right-clicking images
+            visible: params.mediaType === 'image'
+        },
+        {
+            label: 'Search Google for “{selection}”',
+            // Only show it when right-clicking text
+            visible: params.selectionText.trim().length > 0,
+            click: () => {
+                shell.openExternal(`https://google.com/search?q=${encodeURIComponent(params.selectionText)}`);
+            }
+        }
+    ],
+    showInspectElement: isDev,
+});
 let win
+
+// //https://stackoverflow.com/questions/32636750/how-to-add-a-right-click-menu-in-electron-that-has-inspect-element-option-like
+// const remote = require('remote')
+// const Menu = remote.require('menu')
+// const MenuItem = remote.require('menu-item')
+// let rightClickPosition = null
+// const menu = new Menu()
+// const menuItem = new MenuItem({
+//   label: 'Inspect Element',
+//   click: () => {
+//     remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
+//   }
+// })
+// menu.append(menuItem)
+// //
 
 function createWindow () {
   // Create the browser window.
 
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 700,
     webPreferences: {
       nodeIntegration: true
     }
@@ -43,6 +86,12 @@ function createWindow () {
     // when you should delete the corresponding element.
     win = null
   })
+
+  // win.addEventListener('contextmenu', (e) => {
+  //   e.preventDefault()
+  //   rightClickPosition = {x: e.x, y: e.y}
+  //   menu.popup(remote.getCurrentWindow())
+  // }, false)
 }
 
 // This method will be called when Electron has finished
