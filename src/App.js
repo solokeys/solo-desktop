@@ -9,6 +9,7 @@ import {
 import Content from './components/Content'
 import FIDO2Tab from './components/FIDO2'
 import PINTab from './components/PIN'
+import ResetTab from './components/Reset'
 
 const ReactPanel = ()=>(
     <div>
@@ -25,7 +26,7 @@ class DeviceItem extends React.Component {
         super()
         this.state = {
             isOpen:true,
-            tab: "pi",
+            tab: "re",
             versions: [],
             extensions: [],
             hasButton: true,
@@ -135,6 +136,7 @@ class DeviceItem extends React.Component {
                     <Tabs id="TabsExample" onChange={this.handleTabChange} selectedTabId={this.state.tab}>
                         <Tab id="fi" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
                         <Tab id="pi" title="Manage PIN" panel={<PINTab device={this.props.device}/> } />
+                        <Tab id="re" title="Reset" panel={<ResetTab device={this.props.device}/> } />
                         <Tabs.Expander />
                     </Tabs>
                 </Card>
