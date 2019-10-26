@@ -301,7 +301,7 @@ var rp = 'solokeys.com';
 
 
         console.log('to bootloader');
-        for (var i = 0; i < 4*20; i++){
+        for (var i = 0; i < 10*20; i++){
             try {
                 var dev = hid.open(device);
                 var p = new Programmer(dev);
@@ -310,7 +310,7 @@ var rp = 'solokeys.com';
                 break;
             } catch (e) {
                 console.log('need to boot into bootloader mode...', );
-                await sleep(250);
+                await sleep(100);
             }
         }
 
