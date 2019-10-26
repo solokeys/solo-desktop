@@ -26,14 +26,15 @@ class DeviceItem extends React.Component {
     constructor(){
         super()
         this.state = {
-            isOpen:true,
-            tab: "up",
+            isOpen:false,
+            tab: "fi",
             versions: [],
             extensions: [],
             hasButton: true,
             hasPin: false,
             hasRk: true,
             updateClicked: false,
+            autoupdate: false,
         };
         this.handleTabChange = this.handleTabChange.bind(this);
         this.update= this.update.bind(this);
@@ -50,10 +51,11 @@ class DeviceItem extends React.Component {
     update(){
         console.log('click update');
         this.state.updateClicked = true;
+        this.setState({tab: 'up', autoupdate: true, isOpen: true});
     }
     handleTabChange(t){
         console.log('tab change',t);
-        this.setState({tab:t});
+        this.setState({tab:t, autoupdate: false});
     }
     componentDidMount(){
         var info = this.props.device.info;
@@ -127,7 +129,8 @@ class DeviceItem extends React.Component {
                             needsUpdate ?
                             <Button icon="automatic-updates" intent="warning" 
                             text={"Out of date. Update to "+v2[0]+"."+v2[1]+"."+v2[2]+" now."} 
-                            className="p-3" onClick={this.update}/>
+                            className="p-3" onClick={this.update}
+                            />
                             :
                             <Tag intent={firmwareIntent}>{firmwareTag}</Tag>
                         }
@@ -162,7 +165,7 @@ class DeviceItem extends React.Component {
                         <Tab id="fi" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
                         <Tab id="pi" title="Manage PIN" panel={<PINTab device={this.props.device}/> } />
                         <Tab id="re" title="Reset" panel={<ResetTab device={this.props.device}/> } />
-                        <Tab id="up" title="Update" panel={<UpdateTab device={this.props.device} latestVersion={this.props.latestVersion}/> } />
+                        <Tab id="up" title="Update" panel={<UpdateTab device={this.props.device} latestVersion={this.props.latestVersion} autoupdate={this.state.autoupdate} /> } />
                         <Tabs.Expander />
                     </Tabs>
                 </Card>

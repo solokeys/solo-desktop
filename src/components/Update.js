@@ -16,6 +16,7 @@ export default class UpdateTab extends React.Component {
             loading: false,
             needYes: false,
             mounted: false,
+            autoupdated: false,
             error:'',
             status:'',
             progress: 0.0,
@@ -122,10 +123,16 @@ export default class UpdateTab extends React.Component {
             });
             this.state.mounted = true;
         }
+        if (this.props.autoupdate){ console.log('auto updating!') }
     }
 
     render() {
         var v = this.props.latestVersion;
+        if (this.props.autoupdate && !this.state.autoupdated){ 
+            this.setState({autoupdated: true,}, ()=>{
+                this.onUpdate();
+            });
+        }
         return (
             <div>
                 <div className="d-flex flex-row bd-highlight ">

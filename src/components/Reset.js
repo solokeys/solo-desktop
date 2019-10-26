@@ -93,9 +93,9 @@ export default class ResetTab extends React.Component {
     }
     async onYes(){
         console.log('reset!');
-        this.setState({ needYes: false, loading: true, response: false, error: '' });
+        this.setState({ needYes: false, loading: true, response: false, error: '', status: 'Press button on device...'});
         var res = await Comm.sendRecv('reset', this.props.device);
-        this.setState({ loading: false, error: res.error, response:true});
+        this.setState({ loading: false, error: res.error, response:true, status: ''});
     }
 
 
@@ -109,12 +109,6 @@ export default class ResetTab extends React.Component {
                 <div className="d-flex flex-row bd-highlight ">
                     <div className="p-2 bd-highlight">
                         <p>Reset device <span className="font-weight-bold"> {this.props.device.id}</span>.</p>
-                    </div>
-                    <div className="p-2 bd-highlight">
-                        {
-                            this.state.loading &&
-                            <Spinner className="" intent="primary" size={45} />
-                        }
                     </div>
                 </div>
                 <div className="d-flex flex-row bd-highlight ">
@@ -147,6 +141,10 @@ export default class ResetTab extends React.Component {
                                     <span className="pl-2">Success</span>
                                 </H5>
                             )
+                        }
+                        {
+                            this.state.status &&
+                            <Tag className="pl-2" intent="warning"><H5 className="mb-1">{this.state.status}</H5></Tag>
                         }
                         {
                             this.state.loading &&
