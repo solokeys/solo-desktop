@@ -556,4 +556,5 @@ if (require.main === module) {
 
 module.exports = {
     Client: CtapClient,
+    CtapError: CtapError,
 };

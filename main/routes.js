@@ -2,6 +2,7 @@ const ipcMain = require('electron').ipcMain;
 const MemoryMap = require('nrf-intel-hex');
 const CtapClient = require('./ctap').Client;
 const Programmer = require('./bootloader').Programmer;
+const sleep = require('./bootloader').sleep;
 const Util = require('../util');
 const Constants = require('./../constants');
 
@@ -238,7 +239,17 @@ var rp = 'solokeys.com';
         var dev = hid.open(device);
         var p = new Programmer(dev);
         console.log('to bootloader');
-        await p.toBootloader();
+        try{
+
+            await p.toBootloader();
+        }catch(e){
+            if (e.code == Constants.ERROR.CTAP1_ERR_INVALID_COMMAND)
+            {
+                console.log('need to boot into bootloader mode...');
+            }
+            event.reply(cmd,{error: e.toString(), code: e.code});
+            return;
+        }
 
         console.log('load hex file');
         var hexFile = device.fw;
@@ -256,15 +267,53 @@ var rp = 'solokeys.com';
             writtenSize+=count;
             event.reply('progress', writtenSize/totalSize);
         });
+        try{
 
-        for (const [addr, data] of (memMap._blocks.entries())) {
-            await p.write(addr, data);
+            for (const [addr, data] of (memMap._blocks.entries())) {
+                await p.write(addr, data);
+            }
+            p.on('write', null);
+
+            await p.verifyAndReboot();
+        } catch(e) {
+            event.reply(cmd, {error: e.toString(), code: e.code});
+            return;
         }
-        p.on('write', null);
-
-        await p.verifyAndReboot();
 
         event.reply(cmd, { status: 'success' });
+
+    });
+})();
+
+(()=>{
+    var cmd = 'bootloader-mode';
+    ipcMain.on(cmd, async (event, device) => {
+
+
+        console.log('to bootloader');
+        for (var i = 0; i < 4*20; i++){
+            try {
+                var dev = hid.open(device);
+                var p = new Programmer(dev);
+                await p.toBootloader();
+                i = -1;
+                break;
+            } catch (e) {
+                console.log('need to boot into bootloader mode...', e);
+                await sleep(250);
+            }
+        }
+
+        if (i >= 0){
+            console.log('Timeout');
+            event.reply(cmd, { error: 'Timeout' });
+        }
+        else {
+            console.log('Success');
+            event.reply(cmd, { status: 'success' });
+        }
+
+
 
     });
 })();

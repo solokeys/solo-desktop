@@ -1,6 +1,7 @@
 var Util = require('../Util')
 var HID = require('./hid')
 var CtapClient = require('./ctap').Client;
+var CtapError = require('./ctap').CtapError;
 
 const CTAPHID = require('../constants').HID;
 const BOOT = require('../constants').BOOT;
@@ -93,7 +94,13 @@ class Programmer extends CtapClient {
         } catch (e) {
 
         }
-        res = await this.sendRecv(CTAPHID.SOLO_ENTERBOOT);
+        try {
+            res = await this.sendRecv(CTAPHID.SOLO_ENTERBOOT);
+        } catch (e) {
+            if (typeof e == 'number')
+                throw new CtapError(e);
+            throw e;
+        }
         await this.reconnectUntil(async () => {
             var res = await this.sendRecv(CTAPHID.SOLO_BOOT, BootReq(BOOT.VERSION));
             console.log('check version: ', res);
@@ -112,6 +119,9 @@ class Programmer extends CtapClient {
     async writeBlock(addr, data){
         // console.log('<<',addr.toString(16), Util.bin2hex(data));
         var res = await this.sendRecv(CTAPHID.SOLO_BOOT, BootReq(BOOT.WRITE, addr, data));
+        if (res[0] != 0){
+            throw new CtapError(res[0]);
+        }
         if (this.writeEvent){
             this.writeEvent(data.length);
         }
@@ -142,6 +152,13 @@ class Programmer extends CtapClient {
     */
     async verifyAndReboot(signature){
         var res = await this.sendRecv(CTAPHID.SOLO_BOOT, BootReq(BOOT.DONE, 0, signature));
+        if (res[0] == 3){
+            throw 'Boot requires signature or it was denied.'
+        }
+        if (res[0] != 0){
+            throw new CtapError(res[0]);
+        }
+        console.log(res);
     }
 }
 
@@ -151,7 +168,12 @@ async function runTests(){
     var dev = HID.open(HID.devices()[0]);
     var p = new Programmer(dev);
     console.log('to bootloader');
-    await p.toBootloader();
+    try{
+        await p.toBootloader();
+    } catch (e) {
+        if (typeof e == 'number'){
+        }
+    }
 
     console.log('load hex file');
     var hexFile = Util.bin2str(fs.readFileSync(process.argv[2]));
@@ -176,5 +198,6 @@ if (require.main === module) {
 
 module.exports = {
     Programmer: Programmer,
+    sleep: sleep,
 };
 
