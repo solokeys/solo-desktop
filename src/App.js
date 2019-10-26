@@ -38,10 +38,11 @@ class DeviceItem extends React.Component {
         };
         this.handleTabChange = this.handleTabChange.bind(this);
         this.update= this.update.bind(this);
+        this.updateFinished= this.updateFinished.bind(this);
     }
     onClick(){
         // Ignore button presses
-        if (this.state.updateClicked){
+        if (this.state.updateClicked || this.state.autoupdate){
             this.state.updateClicked = false;
             return;
         }
@@ -52,6 +53,12 @@ class DeviceItem extends React.Component {
         console.log('click update');
         this.state.updateClicked = true;
         this.setState({tab: 'up', autoupdate: true, isOpen: true});
+    }
+    updateFinished(success){
+        this.setState({autoupdate: false});
+        if (success){
+            this.setState({version: this.state.latestVersion});
+        }
     }
     handleTabChange(t){
         console.log('tab change',t);
@@ -80,23 +87,25 @@ class DeviceItem extends React.Component {
                 }
             )
         }
+        this.setState({version: this.props.device.version, latestVersion: this.props.latestVersion});
     }
     render() {
         var d = this.props.device;
         var serial = this.props.device.id;
-        var v = d.version;
+
+        var v = this.state.version || this.props.device.version;
+        var v2 = this.state.latestVersion || this.props.latestVersion;
 
         var defaultTag = '';
         var firmwareTag = 'Unknown device.';
         var firmwareIntent = 'secondary';
-        var v2 = this.props.latestVersion;
         var needsUpdate = 0;
         if (d.isSolo){
             defaultTag = 'primary';
             firmwareTag = 'Up to date.';
             firmwareIntent = 'success';
             var vnum1 = (v[0] << 16) | (v[1] << 8) | (v[2] << 0);
-            var vnum2 = ((v2[0] << 16) | (v2[1] << 8) | (v2[2] << 0))+1; 
+            var vnum2 = ((v2[0] << 16) | (v2[1] << 8) | (v2[2] << 0)); 
             if (vnum2 == 0) {
                 firmwareTag = 'Unable to check firmware.';
                 firmwareIntent = 'warning';
@@ -161,11 +170,16 @@ class DeviceItem extends React.Component {
             </Card>
             <Collapse isOpen={this.state.isOpen} className="ml-4 mt-1">
                 <Card interactive={false}>
-                    <Tabs id="TabsExample" onChange={this.handleTabChange} selectedTabId={this.state.tab}>
+                    <Tabs id="TabsExample" onChange={this.handleTabChange} selectedTabId={this.state.tab}
+                    >
                         <Tab id="fi" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
                         <Tab id="pi" title="Manage PIN" panel={<PINTab device={this.props.device}/> } />
                         <Tab id="re" title="Reset" panel={<ResetTab device={this.props.device}/> } />
-                        <Tab id="up" title="Update" panel={<UpdateTab device={this.props.device} latestVersion={this.props.latestVersion} autoupdate={this.state.autoupdate} /> } />
+                        <Tab id="up" title="Update" panel={<UpdateTab device={this.props.device} 
+                                    latestVersion={this.props.latestVersion} 
+                                    autoupdate={this.state.autoupdate} 
+                                    onFinish={this.updateFinished}
+                                    /> } />
                         <Tabs.Expander />
                     </Tabs>
                 </Card>

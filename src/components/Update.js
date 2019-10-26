@@ -82,6 +82,7 @@ export default class UpdateTab extends React.Component {
         } catch (e) {
             console.log(e);
             this.setState({error: e.toString(), loading: false});
+            if (this.props.onFinish) this.props.onFinish(false);
             return;
         }
 
@@ -94,6 +95,7 @@ export default class UpdateTab extends React.Component {
         var res = await Comm.sendRecv('update', this.props.device);
 
         this.setState({progress: 1.0, loading: false, error: res.error});
+        if (this.props.onFinish) this.props.onFinish(! res.error);
 
         // var inter = setInterval(() => {
         //     var p = this.state.progress + 0.05;
