@@ -126,7 +126,9 @@ export default class ResetTab extends React.Component {
                 <div className="d-flex flex-row bd-highlight ">
 
                     <div className="p-2 bd-highlight">
-                        <Button icon="trash" intent="danger" text="Reset" className="p-3 text-wrap" onClick={this.onSubmit} />
+                        <Button icon="trash" intent="danger"
+                        disabled={this.state.loading}
+                        text="Reset" className="p-3 text-wrap" onClick={this.onSubmit} />
                     </div>
                 </div>
                 <div className="d-flex flex-row bd-highlight ">

@@ -10,6 +10,7 @@ import Content from './components/Content'
 import FIDO2Tab from './components/FIDO2'
 import PINTab from './components/PIN'
 import ResetTab from './components/Reset'
+import UpdateTab from './components/Update'
 
 const ReactPanel = ()=>(
     <div>
@@ -26,17 +27,29 @@ class DeviceItem extends React.Component {
         super()
         this.state = {
             isOpen:true,
-            tab: "re",
+            tab: "up",
             versions: [],
             extensions: [],
             hasButton: true,
             hasPin: false,
             hasRk: true,
+            updateClicked: false,
         };
         this.handleTabChange = this.handleTabChange.bind(this);
+        this.update= this.update.bind(this);
     }
     onClick(){
+        // Ignore button presses
+        if (this.state.updateClicked){
+            this.state.updateClicked = false;
+            return;
+        }
+        console.log('click');
         this.setState({isOpen: !this.state.isOpen});
+    }
+    update(){
+        console.log('click update');
+        this.state.updateClicked = true;
     }
     handleTabChange(t){
         console.log('tab change',t);
@@ -74,19 +87,21 @@ class DeviceItem extends React.Component {
         var defaultTag = '';
         var firmwareTag = 'Unknown device.';
         var firmwareIntent = 'secondary';
+        var v2 = this.props.latestVersion;
+        var needsUpdate = 0;
         if (d.isSolo){
             defaultTag = 'primary';
             firmwareTag = 'Up to date.';
             firmwareIntent = 'success';
-            var v2 = this.props.latestVersion;
             var vnum1 = (v[0] << 16) | (v[1] << 8) | (v[2] << 0);
-            var vnum2 = ((v2[0] << 16) | (v2[1] << 8) | (v2[2] << 0)); 
+            var vnum2 = ((v2[0] << 16) | (v2[1] << 8) | (v2[2] << 0))+1; 
             if (vnum2 == 0) {
                 firmwareTag = 'Unable to check firmware.';
                 firmwareIntent = 'warning';
             } else if (vnum2 > vnum1) {
                 firmwareTag = 'Out of date.'; 
                 firmwareIntent = 'warning';
+                needsUpdate = 1;
             }
         }
 
@@ -106,7 +121,17 @@ class DeviceItem extends React.Component {
                            <span className="font-weight-bold"> {v[0]+'.'+v[1]+'.'+v[2]} </span>
                         </div>
                     }
-                    <div className="p-2 bd-highlight"><Tag intent={firmwareIntent}>{firmwareTag}</Tag></div>
+
+                    <div className="p-2 bd-highlight">
+                        {
+                            needsUpdate ?
+                            <Button icon="automatic-updates" intent="warning" 
+                            text={"Out of date. Update to "+v2[0]+"."+v2[1]+"."+v2[2]+" now."} 
+                            className="p-3" onClick={this.update}/>
+                            :
+                            <Tag intent={firmwareIntent}>{firmwareTag}</Tag>
+                        }
+                    </div>
 
                     <div className="pr-1 pl-1 pt-2 bd-highlight">
                         {this.state.versions.map((item, key) =>
@@ -137,6 +162,7 @@ class DeviceItem extends React.Component {
                         <Tab id="fi" title="FIDO2" panel={<FIDO2Tab device={this.props.device}/> } />
                         <Tab id="pi" title="Manage PIN" panel={<PINTab device={this.props.device}/> } />
                         <Tab id="re" title="Reset" panel={<ResetTab device={this.props.device}/> } />
+                        <Tab id="up" title="Update" panel={<UpdateTab device={this.props.device} latestVersion={this.props.latestVersion}/> } />
                         <Tabs.Expander />
                     </Tabs>
                 </Card>

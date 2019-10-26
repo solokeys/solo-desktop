@@ -79,7 +79,7 @@ class Programmer extends CtapClient {
                 }
 
             } catch (e) {
-                console.log('not yet in bootloader,',e);
+                console.log('not yet in bootloader,',);
             }
         }
     }
@@ -112,7 +112,15 @@ class Programmer extends CtapClient {
     async writeBlock(addr, data){
         // console.log('<<',addr.toString(16), Util.bin2hex(data));
         var res = await this.sendRecv(CTAPHID.SOLO_BOOT, BootReq(BOOT.WRITE, addr, data));
-        // console.log('>>',res[0]);
+        if (this.writeEvent){
+            this.writeEvent(data.length);
+        }
+    }
+
+    on(event, func){
+        if (event == 'write'){
+            this.writeEvent = func;
+        }
     }
 
     /** Write data to flash on bootloader device.
@@ -166,5 +174,7 @@ if (require.main === module) {
 }
 
 
-
+module.exports = {
+    Programmer: Programmer,
+};
 

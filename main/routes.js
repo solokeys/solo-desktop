@@ -1,7 +1,9 @@
 const ipcMain = require('electron').ipcMain;
-var CtapClient = require('./ctap').Client;
-var Util = require('../util');
-var Constants = require('./../constants');
+const MemoryMap = require('nrf-intel-hex');
+const CtapClient = require('./ctap').Client;
+const Programmer = require('./bootloader').Programmer;
+const Util = require('../util');
+const Constants = require('./../constants');
 
 var cdh = Util.sha256bin('123');
 var hid = require('./hid');
@@ -224,6 +226,45 @@ var rp = 'solokeys.com';
         }
         
         event.reply(cmd,{status: 'success'});
+
+    });
+})();
+
+(()=>{
+    var cmd = 'update';
+    ipcMain.on(cmd, async (event, device) => {
+
+
+        var dev = hid.open(device);
+        var p = new Programmer(dev);
+        console.log('to bootloader');
+        await p.toBootloader();
+
+        console.log('load hex file');
+        var hexFile = device.fw;
+        let memMap = MemoryMap.fromHex(hexFile);
+
+        console.log('updating...');
+        var totalSize = 0;
+        for (const [addr, data] of (memMap._blocks.entries())) {
+            totalSize += data.length;
+        }
+
+        var writtenSize = 0;
+
+        p.on('write', (count)=>{
+            writtenSize+=count;
+            event.reply('progress', writtenSize/totalSize);
+        });
+
+        for (const [addr, data] of (memMap._blocks.entries())) {
+            await p.write(addr, data);
+        }
+        p.on('write', null);
+
+        await p.verifyAndReboot();
+
+        event.reply(cmd, { status: 'success' });
 
     });
 })();
