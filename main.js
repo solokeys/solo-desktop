@@ -29,33 +29,12 @@ contextMenu({
             // Only show it when right-clicking images
             visible: params.mediaType === 'image'
         },
-        {
-            label: 'Search Google for “{selection}”',
-            // Only show it when right-clicking text
-            visible: params.selectionText.trim().length > 0,
-            click: () => {
-                shell.openExternal(`https://google.com/search?q=${encodeURIComponent(params.selectionText)}`);
-            }
-        }
     ],
-    showInspectElement: isDev,
+    showInspectElement: true, //isDev,
 });
 let win
 
-// //https://stackoverflow.com/questions/32636750/how-to-add-a-right-click-menu-in-electron-that-has-inspect-element-option-like
-// const remote = require('remote')
-// const Menu = remote.require('menu')
-// const MenuItem = remote.require('menu-item')
-// let rightClickPosition = null
-// const menu = new Menu()
-// const menuItem = new MenuItem({
-//   label: 'Inspect Element',
-//   click: () => {
-//     remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
-//   }
-// })
-// menu.append(menuItem)
-// //
+
 
 function createWindow () {
   // Create the browser window.
@@ -65,7 +44,8 @@ function createWindow () {
     height: 700,
     webPreferences: {
       nodeIntegration: true
-    }
+    },
+    icon: 'assets/solokeys-32x32.png',
   })
 
   // and load the index.html of the app.
@@ -77,7 +57,8 @@ function createWindow () {
   }));
 
   // Open the DevTools.
-  win.webContents.openDevTools()
+  if (isDev)
+    win.webContents.openDevTools()
 
   // Emitted when the window is closed.
   win.on('closed', () => {
