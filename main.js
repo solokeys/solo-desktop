@@ -29,15 +29,19 @@ function createWindow () {
       nodeIntegration: true
     },
     icon: 'assets/solokeys-32x32.png',
-  })
+    show: false,
+  });
 
-  // and load the index.html of the app.
-  // win.loadFile('app/index.html')
-  win.loadURL(url.format({
-    pathname: path.join(__dirname, 'index.html'),
-    protocol: 'file:',
-    slashes: true
-  }));
+  win.once('ready-to-show', () => {
+    win.show()
+
+
+  });
+    win.loadURL(url.format({
+      pathname: path.join(__dirname, 'index.html'),
+      protocol: 'file:',
+      slashes: true
+    }));
 
   // Open the DevTools.
   if (isDev)
@@ -53,11 +57,6 @@ function createWindow () {
     win = null
   })
 
-  // win.addEventListener('contextmenu', (e) => {
-  //   e.preventDefault()
-  //   rightClickPosition = {x: e.x, y: e.y}
-  //   menu.popup(remote.getCurrentWindow())
-  // }, false)
 }
 
 // This method will be called when Electron has finished
