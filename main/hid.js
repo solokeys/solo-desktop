@@ -1,8 +1,8 @@
 var HID = require('node-hid');
 const usb = require('usb');
 const os = require('os');
-const Util = require('../util');
-const CONST = require('../constants').HID;
+const Util = require('./util');
+const CONST = require('./constants').HID;
 var devices = HID.devices();
 
 /** toWindowsPkt

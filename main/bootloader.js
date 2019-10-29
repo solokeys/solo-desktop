@@ -1,14 +1,14 @@
-var Util = require('../Util')
+var Util = require('./util')
 var HID = require('./hid')
 var CtapClient = require('./ctap').Client;
 var CtapError = require('./ctap').CtapError;
 
-const CTAPHID = require('../constants').HID;
-const BOOT = require('../constants').BOOT;
+const CTAPHID = require('./constants').HID;
+const BOOT = require('./constants').BOOT;
 const MemoryMap = require('nrf-intel-hex');
-const CTAP2 = require('../constants').CTAP2;
-const CTAP1 = require('../constants').CTAP1;
-const ERROR = require('../constants').ERROR;
+const CTAP2 = require('./constants').CTAP2;
+const CTAP1 = require('./constants').CTAP1;
+const ERROR = require('./constants').ERROR;
 
 var DEBUG = 0;
 

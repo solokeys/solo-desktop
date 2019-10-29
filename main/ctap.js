@@ -1,13 +1,13 @@
 const CBOR= require('cbor-sync');
 const CBOR2 = require('cbor');
 
-var Util = require('../util')
+var Util = require('./util')
 var hid = require('./hid')
 
-const CTAPHID = require('../constants').HID;
-const CTAP2 = require('../constants').CTAP2;
-const CTAP1 = require('../constants').CTAP1;
-const ERROR = require('../constants').ERROR;
+const CTAPHID = require('./constants').HID;
+const CTAP2 = require('./constants').CTAP2;
+const CTAP1 = require('./constants').CTAP1;
+const ERROR = require('./constants').ERROR;
 
 const EC = require('elliptic').ec;
 const createHash= require('sha.js');

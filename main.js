@@ -57,7 +57,7 @@ function createWindow () {
   }));
 
   // Open the DevTools.
-  if (isDev)
+  // if (isDev)
     win.webContents.openDevTools()
 
   // Emitted when the window is closed.

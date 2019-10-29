@@ -20,6 +20,17 @@ node_modules/.bin/electron-rebuild
 npm start
 ```
 
+# Building a release
+
+Normal users should have an easy to use binary or installer.
+To create one, run:
+
+```
+npm run release
+```
+
+And check the `dist/` folder.  It takes a minute.
+
 # Testing
 
 Tests run in node so you need to rebuild since you're not using electron.

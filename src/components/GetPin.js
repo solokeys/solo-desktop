@@ -4,7 +4,7 @@ import { H1,H2,H3,H4,H5,
         Elevation, InputGroup, FormGroup} from "@blueprintjs/core";
 import { timingSafeEqual } from 'crypto';
 const Comm = require('../comm');
-const Constants = require('../../constants');
+const Constants = require('../constants');
                 
 
 

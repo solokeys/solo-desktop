@@ -25,7 +25,7 @@ gulp.task('css', () => { // 2.
         .pipe(gulp.dest('app/'))
 });// 3. Compile JS files and move them to the app folder
 gulp.task('js', () => { // 3.
-    return gulp.src(['main.js', 'src/**/*.js', 'main/**/*.js'])
+    return gulp.src(['main.js', 'constants.js', 'util.js', 'src/**/*.js', 'main/**/*.js'])
          .pipe(babel())
          .pipe(gulp.dest('app/'))
 });// 4. Start the electron process.
@@ -52,7 +52,10 @@ gulp.task('watch', async function() {
 gulp.task('default', gulp.parallel('start', 'watch'));
 
 gulp.task('release', gulp.series('build', () => {
-    return exec(
+    var p = exec(
         __dirname+'/node_modules/.bin/electron-builder .'
     ).on('close', () => process.exit());
+    p.stdout.pipe(process.stdout);
+    p.stderr.pipe(process.stderr);
+    return p;
 }));

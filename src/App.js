@@ -11,6 +11,7 @@ import FIDO2Tab from './components/FIDO2'
 import PINTab from './components/PIN'
 import ResetTab from './components/Reset'
 import UpdateTab from './components/Update'
+const Comm = require('./comm');
 
 const ReactPanel = ()=>(
     <div>

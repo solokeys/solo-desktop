@@ -5,7 +5,7 @@ import { H1,H2,H3,H4,H5,
 import { timingSafeEqual } from 'crypto';
 import GetPin from './GetPin';
 const Comm = require('../comm');
-const Constants = require('../../constants');
+const Constants = require('../constants');
 
 export default class PINTab extends React.Component {
     constructor() {

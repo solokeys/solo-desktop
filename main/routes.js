@@ -3,8 +3,8 @@ const MemoryMap = require('nrf-intel-hex');
 const CtapClient = require('./ctap').Client;
 const Programmer = require('./bootloader').Programmer;
 const sleep = require('./bootloader').sleep;
-const Util = require('../util');
-const Constants = require('./../constants');
+const Util = require('./util');
+const Constants = require('./constants');
 
 var cdh = Util.sha256bin('123');
 var hid = require('./hid');
