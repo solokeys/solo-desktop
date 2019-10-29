@@ -19,6 +19,26 @@
     <script src="http://localhost:35729/livereload.js"></script>
 <script>
 
+const { remote } = require('electron');
+const { Menu, MenuItem } = remote;
+
+  const menu = new Menu()
+  const menuItem = new MenuItem({
+    label: 'Inspect Element',
+    click: () => {
+      remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
+    }
+  })
+  menu.append(menuItem)
+
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    rightClickPosition = { x: e.x, y: e.y }
+    menu.popup(remote.getCurrentWindow())
+  }, false)
+
+
+
 </script>
 </body>
 

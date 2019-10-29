@@ -2,7 +2,6 @@ const { ipcMain } = require('electron');
 const { app, BrowserWindow } = require('electron')
 const path = require('path'); 
 require('./routes');
-const contextMenu = require('electron-context-menu');
 
 import url from 'url';
 require('./hid');
@@ -15,24 +14,8 @@ if (isDev) {
 	console.log('Running in production');
 }
 
-// require('electron-reload')(__dirname, {
-//   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
-// });
-
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
-
-contextMenu({
-    prepend: (defaultActions, params, browserWindow) => [
-        {
-            label: 'Rainbow',
-            // Only show it when right-clicking images
-            visible: params.mediaType === 'image'
-        },
-    ],
-    showInspectElement: true, //isDev,
-});
 let win
+
 
 
 
@@ -57,8 +40,10 @@ function createWindow () {
   }));
 
   // Open the DevTools.
-  // if (isDev)
+  if (isDev)
     win.webContents.openDevTools()
+
+  let rightClickPosition = null
 
   // Emitted when the window is closed.
   win.on('closed', () => {

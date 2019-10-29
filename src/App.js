@@ -13,15 +13,6 @@ import ResetTab from './components/Reset'
 import UpdateTab from './components/Update'
 const Comm = require('./comm');
 
-const ReactPanel = ()=>(
-    <div>
-        <H3>Example panel: React</H3>
-        <p className={Classes.RUNNING_TEXT}>
-            Lots of people use React as the V in MVC. Since React makes no assumptions about the rest of your technology
-            stack, it's easy to try it out on a small feature in an existing project.
-        </p>
-    </div>
-);
 
 class DeviceItem extends React.Component {
     constructor(){
@@ -246,6 +237,7 @@ export default class App extends React.Component {
     }
 
     componentDidMount() {
+        console.log('App mounted');
         this.listDevices().then(() => {
         });
     }

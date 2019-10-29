@@ -24,6 +24,9 @@
     "win": {
       "requestedExecutionLevel": "requireAdministrator"
     },
+    "mac": {
+      "category": "solokeys.desktop.utility.application"
+    },
     "publish": null
   },
   "keywords": [
@@ -48,7 +51,6 @@
     "electron-builder": "^21.2.0",
     "electron-connect": "^0.6.3",
     "electron-rebuild": "^1.8.6",
-    "electron-reload": "^1.5.0",
     "gulp": "^4.0.2",
     "gulp-babel": "^8.0.0",
     "gulp-clean-css": "^4.2.0",
@@ -66,7 +68,6 @@
     "cbor": "^5.0.1",
     "cbor-sync": "^1.0.4",
     "create-hmac": "^1.1.7",
-    "electron-context-menu": "^0.15.0",
     "electron-is-dev": "^1.1.0",
     "elliptic": "^6.5.1",
     "node-hid": "^0.7.9",
