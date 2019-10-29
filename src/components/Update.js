@@ -123,7 +123,7 @@ export default class UpdateTab extends React.Component {
             var parts = json.assets[i].name.split(tag);
             if (parts.length != 2) continue;
 
-            if (parts[0] == 'firmware-hacker-' && parts[1] == '.hex') {
+            if (parts[0] == 'firmware-' && parts[1] == '.json') {
                 console.log('found correct asset');
                 fw_url = json.assets[i].browser_download_url;
                 break;
@@ -182,9 +182,10 @@ export default class UpdateTab extends React.Component {
     async onUpdate(){
         this.setState({loading:true, progress: 0.0, status: 'Downloading firmware...', error:''});
 
-        var hexfile;
+        var jsonFile;
         try{
-            hexfile = await this.downloadFirmware();
+            jsonFile = await this.downloadFirmware();
+            jsonFile = JSON.parse(jsonFile);
         } catch (e) {
             console.log(e);
             this.setState({error: e.toString(), loading: false});
@@ -192,12 +193,9 @@ export default class UpdateTab extends React.Component {
             return;
         }
 
-        console.log('got hex file: ', hexfile.slice(0,100));
-
-
         this.setState({ status: 'Erasing...', progress: 0.0 });
 
-        this.props.device.fw = hexfile;
+        this.props.device.json = jsonFile;
         var res = await Comm.sendRecv('update', this.props.device);
         console.log('update-res', res);
 

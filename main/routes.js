@@ -10,6 +10,52 @@ var cdh = Util.sha256bin('123');
 var hid = require('./hid');
 var rp = 'solokeys.com';
 
+/** isCorrectSignature
+ * @param {Array} current 3 byte version e.g. [1,2,0]
+ * @param {String} target version requirement e.g. "<=2.5.3"
+ * @return {boolean} indicating if current satisfies target
+*/
+function isCorrectSignature(current, target){
+    var current_num = (current[0] << 16) | (current[1] << 8) | current[2];
+    var target_num;
+    var comp;
+    if (target.indexOf('=') >= 0){
+        var parts = target.split('=');
+        target_num = parts[1].split('.');
+        if (parts[0] == '>')
+            comp = '>=';
+        else if (parts[0] == '<')
+            comp = '<=';
+        else 
+            throw 'Invalid version string'
+    }
+    else {
+        target_num = target.slice(1,target.length).split('.');
+        if (target[0] == '>')
+            comp = '>';
+        else if (target[0] == '<')
+            comp = '<';
+        else 
+            throw 'Invalid version string'
+    }
+    target_num = target_num.map(i => parseInt(i));
+    target_num = (target[0] << 16) | (target[1] << 8) | target[2];
+    return eval(current_num + comp + target_num);
+}
+
+/** loadJsonFirmware
+ * @param {Object} json the parsed JSON firmware file
+ * @return {Object} Same object but websafe strings converted to raw types.
+*/
+function loadJsonFirmware(json){
+    var hex = Util.websafe2string(json.firmware);
+    var versions = {};
+    for (var k in json.versions){
+        versions[k] = {signature: Util.websafe2array(json.versions[k].signature)};
+    }
+    return {firmware: hex, versions: versions};
+}
+
 // routes.init();
 
 // async function routeFunc(cmd, arg, event){
@@ -248,10 +294,12 @@ var rp = 'solokeys.com';
 
         var dev = hid.open(device);
         var p = new Programmer(dev);
+        var current_version;
         console.log('to bootloader');
         try{
 
             await p.toBootloader();
+            current_version = await p.getVersion();
         }catch(e){
             if (e.code == Constants.ERROR.CTAP1_ERR_INVALID_COMMAND)
             {
@@ -262,7 +310,24 @@ var rp = 'solokeys.com';
         }
 
         console.log('load hex file');
-        var hexFile = device.fw;
+        var hexFile;
+        var signature = null;
+        if (device.json){
+            var fw = loadJsonFirmware(device.json);
+            hexFile = fw.firmware;
+
+            for (var v in fw.versions){
+                if (isCorrectSignature(current_version, v)) {
+                    signature = fw.versions[v].signature;
+                    break;
+                }
+            }
+            if (!signature)
+                throw 'Could not find valid signature version in firmware file'
+
+        } else {
+            hexFile = fw.hexFile;
+        }
         let memMap = MemoryMap.fromHex(hexFile);
 
         console.log('updating...');
@@ -284,7 +349,8 @@ var rp = 'solokeys.com';
             }
             p.on('write', null);
 
-            await p.verifyAndReboot();
+            var sig = null
+            await p.verifyAndReboot(signature);
         } catch(e) {
             event.reply(cmd, {error: e.toString(), code: e.code});
             return;

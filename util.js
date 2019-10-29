@@ -184,4 +184,13 @@ cert2publickey: function (x509) {
     return Buffer.from(pk);
 },
 
+websafe2string: function(string) {
+    return this.bin2str(this.b64url2bin(string));
+},
+
+websafe2array: function(websafe) {
+    return (this.b64url2bin(websafe));
+},
+
+
 }

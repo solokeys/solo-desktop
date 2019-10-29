@@ -160,6 +160,22 @@ class Programmer extends CtapClient {
         }
         console.log(res);
     }
+
+    /** Check version of bootloader
+     * @param {Uint8Array} signature optional
+     * @return {Array} 3 byte version and 1 byte lock indicator
+    */
+    async getVersion(signature){
+        var res;
+        try{
+            res = await this.sendRecv(CTAPHID.SOLO_GETVERSION, []);
+        } catch (e) {
+            if (e == CTAP1_ERR_INVALID_COMMAND)
+                return [0,0,0,0];
+            throw new CtapError(e);
+        }
+        return res.slice(0,4)
+    }
 }
 
 async function runTests(){
