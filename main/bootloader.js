@@ -170,7 +170,7 @@ class Programmer extends CtapClient {
         try{
             res = await this.sendRecv(CTAPHID.SOLO_GETVERSION, []);
         } catch (e) {
-            if (e == CTAP1_ERR_INVALID_COMMAND)
+            if (e == ERROR.CTAP1_ERR_INVALID_COMMAND)
                 return [0,0,0,0];
             throw new CtapError(e);
         }
