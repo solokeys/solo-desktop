@@ -263,6 +263,7 @@ export default class App extends React.Component {
             <Button
                 icon="refresh"
                 onClick={this.listDevices}
+                disabled={this.state.loading}
             // {...buttonProps}
             >
                 Refresh Authenticators
