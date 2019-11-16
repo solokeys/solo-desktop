@@ -15,8 +15,8 @@ Not yet ready!
 
 ```
 cd solo-desktop
-npm install
-node_modules/.bin/electron-rebuild
+npm ci
+npx electron-rebuild
 npm start
 ```
 
