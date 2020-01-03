@@ -15,7 +15,7 @@ Not yet ready!
 
 ```
 cd solo-desktop
-npm ci
+npm i
 npx electron-rebuild
 npm start
 ```
