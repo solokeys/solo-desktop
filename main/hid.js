@@ -143,12 +143,12 @@ class HidResponse {
 }
 
 // Return list of HID devices matching usagePage and usage.
-function getHIDDevicesByUsage(usagePage, usage){
-    var devices = HID.devices();
-    for (var i = 0; i < devices.length; i++){
-        console.log('device '+i, devices[i]);
-    }
-    return devices.filter((d) => (d.usagePage == usagePage && d.usage == usage));
+function getHIDDevicesByUsage(usagePage, usage) {
+  const devices = HID.devices();
+  devices.map((device, i) => console.log(`device ${i}`, device));
+  return devices.filter(
+    ({ manufacturer }) => manufacturer.toLowerCase() === "solokeys"
+  );
 }
 
 /** sendAllRecv
