@@ -52,3 +52,5 @@ Run FIDO HID tests.
 node main/hid.js
 ```
 
+# License
+Distributed under MIT license.

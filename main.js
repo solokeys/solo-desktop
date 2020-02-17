@@ -1,3 +1,9 @@
+// Copyright 2019 SoloKeys Developers
+//
+// Licensed under MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>. This file may not be copied, modified,
+// or distributed except according to those terms.
+
 const { ipcMain } = require('electron');
 const { app, BrowserWindow } = require('electron')
 const path = require('path'); 
