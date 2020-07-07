@@ -47,7 +47,7 @@
     "@babel/preset-env": "^7.6.3",
     "@babel/preset-react": "^7.6.3",
     "cross-env": "^6.0.3",
-    "electron": "^6.0.12",
+    "electron": "^7.2.4",
     "electron-builder": "^21.2.0",
     "electron-connect": "^0.6.3",
     "electron-rebuild": "^1.8.6",
